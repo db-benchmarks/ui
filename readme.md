@@ -7,7 +7,7 @@
 <h3 align="center">
   <a href="https://db-benchmarks.com">📊 Benchmark results</a> •
   <a href="#introduction">Intro</a> •
-  <a href="https://github.com/db-benchmarks/db-benchmarks">Test framework</a> •
+  <a href="https://github.com/db-benchmarks/db-benchmarks/#intro">Test framework</a> •
   <a href="#installation">Installation</a>
 </h3>
 
