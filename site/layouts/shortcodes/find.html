@@ -1,0 +1,5 @@
+{{ $filename := (path.Join $.Page.Dir (.Get "file")) }} 
+{{ $pattern := .Get "pattern" }}
+{{ $out := index ($filename | readFile | findRE $pattern) 0 }}
+{{ $out := $out | replaceRE "<!--.*?-->" "" }}
+{{ print $out | .Page.RenderString }}

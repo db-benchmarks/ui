@@ -1,0 +1,28 @@
+frontend/.DS_Store
+frontend/node_modules
+frontend/dist
+frontend/package-lock.json
+
+# Local env files
+.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Log files
+logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Certbot
+certbot
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

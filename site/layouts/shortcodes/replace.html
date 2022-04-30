@@ -1,0 +1,5 @@
+{{ $filename := (path.Join $.Page.Dir (.Get "file")) }} 
+{{ $pattern := .Get "pattern" }}
+{{ $replacement := .Get "replacement" }}
+{{ $out := $filename | readFile | replaceRE $pattern $replacement }}
+{{ print $out | .Page.RenderString }}

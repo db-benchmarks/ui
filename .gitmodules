@@ -1,0 +1,7 @@
+[submodule "site/themes/LoveIt"]
+	path = site/themes/LoveIt
+	url = https://github.com/dillonzq/LoveIt.git
+[submodule "site/db-benchmarks"]
+	path = site/db-benchmarks
+	url = git@github.com:db-benchmarks/db-benchmarks.git
+	branch = main

@@ -1,0 +1,2 @@
+{{ $filename := (path.Join $.Page.Dir (.Get "file")) }}
+{{ print $filename | readFile | .Page.RenderString }}

@@ -1,0 +1,9 @@
+We've also configured the databases to not use any internal caches:
+* Clickhouse:
+  - `SYSTEM DROP MARK CACHE`, `SYSTEM DROP UNCOMPRESSED CACHE`, `SYSTEM DROP COMPILED EXPRESSION CACHE` [after each query](https://github.com/db-benchmarks/db-benchmarks/blob/main/plugins/clickhouse.php).
+* Elasticsearch:
+  - `"index.queries.cache.enabled": false` in its configuration
+  - `/_cache/clear?request=true&query=true&fielddata=true` [after each query](https://github.com/db-benchmarks/db-benchmarks/blob/main/plugins/elasticsearch.php).
+* For Manticore Search in its configuration file:
+  - `qcache_max_bytes = 0`
+  - `docstore_cache_size = 0`

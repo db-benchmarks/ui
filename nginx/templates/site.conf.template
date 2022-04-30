@@ -1,0 +1,33 @@
+server {
+    server_name ${HOSTNAME};
+
+    # change this to `listen 80;` and remove the next server section if you don't need https, e.g. for localhost
+    listen 80;
+
+    root /site;
+    index index.html index.htm;
+
+    location /api {
+        root  /backend;
+        index index.php;
+        rewrite ^/api? /index.php last;
+    }
+
+    location ~ \.php$ {
+       root /backend;
+       fastcgi_split_path_info ^(.+\.php)(/.+)$;
+       fastcgi_pass php:9000;
+       fastcgi_index index.php;
+       include fastcgi_params;
+       fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+       fastcgi_param PATH_INFO $fastcgi_path_info;
+    }
+
+    access_log /var/log/nginx/site_access.log;
+    error_log /var/log/nginx/site_error.log;
+}
+
+server {
+    server_name www.${HOSTNAME};
+    return 301 $scheme://${HOSTNAME}$request_uri;
+}
