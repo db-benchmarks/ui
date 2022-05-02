@@ -50,7 +50,14 @@ By default it listens on port 80, but you can easily install Let's Encrypt certi
 docker-compose exec nginx certbot --nginx
 ```
 
-and answer certbot's questions (your email etc).
+and answer certbot's questions (your email etc). After that run:
+
+```bash
+docker-compose exec nginx sed -i "s/listen 443 ssl;/listen 443 ssl http2;/" /etc/nginx/conf.d/site.conf
+docker-compose restart nginx
+```
+
+to enable http/2 for the site.
 
 It will put the certificates to `./nginx/ssl/` and will update your Nginx configs in `./nginx/conf/`. After that to prevent the configs from further overriding from the templates in `./nginx/templates/` you need to update your `.env` file like this:
 
@@ -63,4 +70,6 @@ To renew your certificates in few months just run:
 
 ```bash
 docker-compose exec nginx certbot renew
+docker-compose exec nginx sed -i "s/listen 443 ssl;/listen 443 ssl http2;/" /etc/nginx/conf.d/site.conf
+docker-compose restart nginx
 ```
