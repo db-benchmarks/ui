@@ -1,13 +1,13 @@
 <p align="center">
   <a href="https://db-benchmarks.com" target="_blank" rel="noopener">
-    <img src="./logo.svg" width="50%" alt="db-benchmarks logo" style="color: white">
+    <img id="intro" src="./logo.svg" width="50%" alt="db-benchmarks logo" style="color: white">
   </a>
 </p>
 
 <h3 align="center">
   <a href="https://db-benchmarks.com">📊 Benchmark results</a> •
   <a href="#introduction">Intro</a> •
-  <a href="https://github.com/db-benchmarks/db-benchmarks">Test framework</a> •
+  <a href="https://github.com/db-benchmarks/db-benchmarks/#intro">Test framework</a> •
   <a href="#installation">Installation</a>
 </h3>
 
