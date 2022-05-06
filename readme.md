@@ -25,7 +25,7 @@ Please [find instructions here](https://github.com/db-benchmarks/db-benchmarks#s
 
 Clone the repository and update the submodules:
 ```bash
-git clone https://github.com/db-benchmarks/ui db-benchmarks-site
+git clone git@github.com:db-benchmarks/ui.git db-benchmarks-site
 cd db-benchmarks-site
 cp .env_example .env
 git submodule update --init --recursive --remote
