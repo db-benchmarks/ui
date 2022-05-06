@@ -27,20 +27,20 @@ Clone the repository and update the submodules:
 ```bash
 git clone https://github.com/db-benchmarks/ui
 cd ui
-git submodule update --init --recursive --remote
-```
-
-Copy `.env_example` to `.env`:
-```
 cp .env_example .env
+git submodule update --init --recursive --remote
+docker-compose up -d
+cd site/db-benchmarks
+./test --save=results --host=db.localhost --port=80 --username=bench --password=bench
 ```
 
-Update file `.env` with the actual hostname of the site, don't change `NGINX_TEMPLATES_DIR`.
-```bash
+This should run a full copy of https://db-benchmarks.com on http://localhost (with the db running at http://bench:bench@db.localhost).
+
+To modify the hostname, db username/password update `.env` and:
+```
+docker-compose down
 docker-compose up -d
 ```
-
-In a minute the web server should be accessible at `http://HOSTNAME`, db - at `http://DB_USERNAME:DB_PASSWORD@db.HOSTNAME`
 
 # HTTPS support
 
