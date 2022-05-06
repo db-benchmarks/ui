@@ -30,11 +30,10 @@ cd db-benchmarks-site
 cp .env_example .env
 git submodule update --init --recursive --remote
 docker-compose up -d
-cd site/db-benchmarks
-./test --save=results --host=db.localhost --port=80 --username=bench --password=bench
+./site/db-benchmarks/test --save=results --host=db.localhost --port=80 --username=bench --password=bench
 ```
 
-This should run a full copy of https://db-benchmarks.com on http://localhost (with the db running at http://bench:bench@db.localhost).
+This should run a full copy of https://db-benchmarks.com on http://localhost (with the db running at http://bench:bench@db.localhost , you need to [add](https://linuxize.com/post/how-to-edit-your-hosts-file/) it to your hosts file).
 
 To modify the hostname, db username/password update `.env` and:
 ```
