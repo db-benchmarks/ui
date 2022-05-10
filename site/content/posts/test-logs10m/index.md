@@ -17,7 +17,7 @@ toc:
 
 ## Intro
 
-In this article we'll observe another test added to / - 10+ million standard HTTP logs collected by Nginx on ecommerce website zanbil.ir.
+In this article we'll observe another test added to https://db-benchmarks.com/ - 10+ million standard HTTP logs collected by Nginx on ecommerce website zanbil.ir.
 
 <!--more-->
 
@@ -41,18 +41,6 @@ We found the data collection on https://www.kaggle.com/datasets/eliasdabbas/web-
 ```
 
 Probably most of web sites in the Internet have a similar log. Many website admins and devops want to be able to process logs like this to do filtering and analytics.
-
-The data collection constitutes 1.7B taxi and for-hire vehicle (Uber, Lyft, etc.) trips originating in New York City since 2009. Most of the [raw data](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page) comes from the NYC Taxi & Limousine Commission.
-
-The data collection record includes a lot of different attributes of a taxi ride:
-* pickup date and time
-* coordinates of pickup and dropoff
-* pickup and dropoff location names
-* fee and tip amount
-* wind speed, snow depth
-* and many other fields
-
-It can be used mostly for testing analytical queries, but it also includes a couple of full-text fields that can be used to test free text capabilities of databases.
 
 After parsing by the [framework](https://github.com/db-benchmarks/db-benchmarks/) there are 11 fields in the log:
 * 7 string fields

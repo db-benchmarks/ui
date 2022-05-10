@@ -23,7 +23,7 @@ It started with [Todd W. Schneider](https://toddwschneider.com/) deciding to pre
 
 <!--more-->
 
-Now we at /:
+Now we at https://db-benchmarks.com/:
 * have [dockerized preparation of the data collection](https://github.com/db-benchmarks/db-benchmarks/tree/main/tests/taxi/load) to make it easier to use
 * made it available as a part of the most transparent and [open source database benchmarks suite](https://github.com/db-benchmarks/db-benchmarks).
 
