@@ -10,7 +10,7 @@
     <template v-for="record in items">
       <button
           v-for="(selected, name) in record" :key="name" type="button"
-          v-bind:class="[{ 'btn-success': selected }, 'btn-secondary']"
+          v-bind:class="[{ 'btn-success': selected }, 'btn-secondary', isActive(name, selected)?'d-none':'']"
           :disabled="isActive(name, selected)"
           class="btn btn-sm" @click="click(record)">
         {{
