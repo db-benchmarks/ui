@@ -99,7 +99,7 @@ export default {
       checksums: {},
       supportedEngines: {},
       resultsCount: 0,
-      cache: [{"fastest": 1}, {"slowest": 0}, {"fast_avg": 0}],
+      cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
     }
   },
   created() {
