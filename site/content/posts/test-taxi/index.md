@@ -111,9 +111,10 @@ We've tried to make as little changes to database default settings as possible t
 * Elasticsearch: here to make it fair to compare with the other databases we [had to help Elasticsearch](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/taxi/es/logstash_tuned/template.json) by:
   - letting it make 32 shards: (`"number_of_shards": 32`), otherwise it couldn't utilize the CPU which has 32 cores on the server, since as [said](https://www.elastic.co/guide/en/elasticsearch/reference/current/size-your-shards.html#single-thread-per-shard) in Elasticsearch official guide "Each shard runs the search on a single CPU thread".
   - `bootstrap.memory_lock=true` since as said on https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_disable_swapping it needs to be done for performance.
-* [Manticore Search](https://github.com/db-benchmarks/db-benchmarks/tree/main/tests/taxi/manticore):
+  - the docker image is [standard](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml)
+* Manticore Search is also used in a form of [their own docker image + the columnar library they provide](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml):
   - as well as with Elasticsearch we [also use](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/taxi/manticore/generate_manticore_config.php) 32 shards in a form of 32 plain indexes
-  - and we use Manticore Columnar Library since comparing Manticore's default row-wise storage vs Clickhouse's and Elasticsearch's columnar storages would be not fair on such a large data collection.
+  - and we use Manticore columnar storage since comparing Manticore's default row-wise storage vs Clickhouse's and Elasticsearch's columnar storages would be not fair on such a large data collection.
 
 {{% embed file="../about-internal-caches" %}}
 
@@ -130,25 +131,17 @@ You can find all the results on the [results page](/) by selecting "Test: taxi".
 
 ### 3 competitors at once
 
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_columnar_plain_20220422_066f_da31%2Celasticsearch_tuned_32%2Cclickhouse&tests=taxi&memory=110000&queries=0%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13%2C14%2C15%2C16):
-
 ![](3.png)
 
 ### Clickhouse vs Elasticsearch
-
-[avg(80% fastest)](/?cache=fast_avg&engines=elasticsearch_tuned_32%2Cclickhouse&tests=taxi&memory=110000&queries=0%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13%2C14%2C15%2C16):
 
 ![](ch_es.png)
 
 ### Manticore Search vs Elasticsearch
 
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_columnar_plain_20220422_066f_da31%2Celasticsearch_tuned_32&tests=taxi&memory=110000&queries=0%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13%2C14%2C15%2C16):
-
 ![](ms_es.png)
 
 ### Manticore Search vs Clickhouse
-
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_columnar_plain_20220422_066f_da31%2Cclickhouse&tests=taxi&memory=110000&queries=0%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13%2C14%2C15%2C16):
 
 ![](ms_ch.png)
 

@@ -106,15 +106,11 @@ You can find all the results on the [results page](/) by selecting "Test: logs10
 
 ### 3 competitors with no tuning at once
 
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_plain_20220422_066f_da31%2Celasticsearch%2Cclickhouse&tests=logs10m&memory=110000&queries=0%2C1%2C3%2C4%2C5%2C6%2C8%2C9%2C10%2C11):
-
 ![](msr_es_ch.png)
 
 Unfortunately Elasticsearch timed out for 2 queries, hence they were excluded from the final score calculation.
 
 ### Elasticsearch with no tuning vs Manticore Search (default row-wise storage)
-
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_plain_20220422_066f_da31%2Celasticsearch&tests=logs10m&memory=110000&queries=0%2C1%2C3%2C4%2C5%2C6%2C8%2C9%2C10%2C11):
 
 ![](es_msr.png)
 
@@ -122,15 +118,11 @@ Unfortunately Elasticsearch timed out for 2 queries, hence they were excluded fr
 
 ### Elasticsearch with no tuning vs tuned
 
-[avg(80% fastest)](/?cache=fast_avg&engines=elasticsearch_tuned%2Celasticsearch&tests=logs10m&memory=110000&queries=0%2C1%2C3%2C4%2C5%2C6%2C8%2C9%2C10%2C11):
-
 ![](es_est.png)
 
 Unfortunately Elasticsearch timed out for 2 queries, hence they were excluded from the final score calculation.
 
-### Elasticsearch tuned vs Manticore Search (default raw-wise storage)
-
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_plain_20220422_066f_da31%2Celasticsearch_tuned&tests=logs10m&memory=110000&queries=0%2C1%2C3%2C4%2C5%2C6%2C8%2C9%2C10%2C11):
+### Elasticsearch tuned vs Manticore Search (default row-wise storage)
 
 ![](est_msr.png)
 
@@ -138,21 +130,15 @@ Unfortunately Elasticsearch timed out for 2 queries, hence they were excluded fr
 
 ### Elasticsearch tuned vs Manticore Search (columnar storage)
 
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_columnar_plain_20220422_066f_da31%2Celasticsearch_tuned&tests=logs10m&memory=110000&queries=0%2C1%2C3%2C4%2C5%2C6%2C8%2C9%2C10%2C11):
-
 ![](est_msc.png)
 
 Unfortunately Elasticsearch timed out for 2 queries, hence they were excluded from the final score calculation.
 
 ### Clickhouse vs Manticore Search (columnar storage)
 
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_columnar_plain_20220422_066f_da31%2Cclickhouse&tests=logs10m&memory=110000&queries=0%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11):
-
 ![](ch_msc.png)
 
 ### Manticore Search row-wise vs columnar
-
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_plain_20220422_066f_da31%2Cmanticoresearch_columnar_plain_20220422_066f_da31&tests=logs10m&memory=110000&queries=0%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11):
 
 ![](msr_msc.png)
 

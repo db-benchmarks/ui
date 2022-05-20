@@ -45,17 +45,21 @@ The record structure is:
 
 ## Databases
 
-So far we have made this test available for 3 databases:
+So far we have made this test available for 4 databases:
+
+* [MySQL](https://www.mysql.com/) - "world's most popular" open source OLTP database,
 * [Clickhouse](https://github.com/ClickHouse/ClickHouse) - a powerful OLAP database,
 * [Elasticsearch](https://github.com/elastic/elasticsearch) - general purpose "search and analytics engine",
 * [Manticore Search](https://github.com/manticoresoftware/manticoresearch/) - "database for search", Elasticsearch alternative.
 
 We've tried to make as little changes to database default settings as possible to not give either of them an unfair advantage:
 
-* Clickhouse: [no tuning](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/hn/ch/init), just `CREATE TABLE ... ENGINE = MergeTree() ORDER BY id SETTINGS index_granularity = 8192` and standard [clickhouse-server](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml) docker image.
-* Elasticsearch: also [no tuning](https://github.com/db-benchmarks/db-benchmarks/tree/main/tests/hn_small/es/logstash) except for `bootstrap.memory_lock=true` since as said on https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_disable_swapping it needs to be done for performance.
+* MySQL: [no tuning](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/hn_small/mysql/init), just `CREATE TABLE ..., FULLTEXT(story_text,story_author,comment_text,comment_author))` and standard [mysql docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml).
+* Clickhouse: [no tuning](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/hn/ch/init), just `CREATE TABLE ... ENGINE = MergeTree() ORDER BY id SETTINGS index_granularity = 8192` and standard [clickhouse-server docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml).
+* Elasticsearch: also [no tuning](https://github.com/db-benchmarks/db-benchmarks/tree/main/tests/hn_small/es/logstash) except for `bootstrap.memory_lock=true` since as said on https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_disable_swapping it needs to be done for performance. The [docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml) is also from the vendor.
 * [Manticore Search](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/hn/manticore/generate_manticore_config.php):
   - `min_infix_len = 2` since in Elasticsearch by default you can do infix full-text search and it would be unfair advantage if Manticore was running w/o infixes. Unfortunately it's not possible in Clickhouse at all, so it's given the handicap.
+  - and as for the others we use [their own docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/dockers/manticore) + their columnar library (but it's not used in this test).
 
 {{% embed file="../about-internal-caches" %}}
 
@@ -65,32 +69,38 @@ The query set consists of both full-text and analytical (filtering, sorting, gro
 
 {{% code file="../../db-benchmarks/tests/hn_small/test_queries" language="json" %}}
 
-
 ## Results
 
 You can find all the results on the [results page](/?cache=fast_avg&tests=hn) by selecting "Test: hn_small". {{% embed file="../about-results" %}}
 
 **Unlike other less transparent and less objective benchmarks we are not making any conclusions, we are just leaving screenshots of the results here:**
 
-### 3 competitors at once
+### 4 competitors at once
 
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_plain_20220422_066f_da31%2Celasticsearch%2Cclickhouse&tests=hn_small&memory=110000&queries=0%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13%2C14%2C15%2C16%2C17%2C18%2C19%2C20%2C21%2C22%2C23%2C24%2C25%2C26%2C27):
+![](4.png)
 
-![](ch_ms_es.png)
+### MySQL vs Clickhouse
+
+![](my_ch.png)
+
+### MySQL vs Elasitcsearch
+
+![](my_es.png)
+
+### MySQL vs Manticore Search
+
+![](my_ms.png)
 
 ### Clickhouse vs Elasticsearch
 
-[avg(80% fastest)](/?cache=fast_avg&engines=elasticsearch%2Cclickhouse&tests=hn_small&memory=110000&queries=0%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13%2C14%2C15%2C16%2C17%2C18%2C19%2C20%2C21%2C22%2C23%2C24%2C25%2C26%2C27:)
 ![](ch_es.png)
 
 ### Manticore Search vs Elasticsearch
 
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_plain_20220422_066f_da31%2Celasticsearch&tests=hn_small&memory=110000&queries=0%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13%2C14%2C15%2C16%2C17%2C18%2C19%2C20%2C21%2C22%2C23%2C24%2C25%2C26%2C27):
 ![](ms_es.png)
 
 ### Manticore Search vs Clickhouse
 
-[avg(80% fastest)](/?cache=fast_avg&engines=manticoresearch_plain_20220422_066f_da31%2Cclickhouse&tests=hn_small&memory=110000&queries=0%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13%2C14%2C15%2C16%2C17%2C18%2C19%2C20%2C21%2C22%2C23%2C24%2C25%2C26%2C27):
 ![](ms_ch.png)
 
 ## Disclaimer

@@ -7,3 +7,5 @@ We've also configured the databases to not use any internal caches:
 * For Manticore Search in its configuration file:
   - `qcache_max_bytes = 0`
   - `docstore_cache_size = 0`
+* Operating system:
+  - we do `echo 3 > /proc/sys/vm/drop_caches; sync` before each new query
