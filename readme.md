@@ -72,3 +72,7 @@ docker-compose exec nginx certbot renew
 docker-compose exec nginx sed -i "s/listen 443 ssl;/listen 443 ssl http2;/" /etc/nginx/conf.d/site.conf
 docker-compose restart nginx
 ```
+
+# Notes
+
+* The original test results layout was heavily inspired by Clickhouse Benchmarks - https://clickhouse.com/benchmark/dbms/ . Thank you, Alexey Milovidov and Clickhouse team!
