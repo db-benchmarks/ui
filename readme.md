@@ -29,8 +29,13 @@ git clone git@github.com:db-benchmarks/ui.git db-benchmarks-site
 cd db-benchmarks-site
 cp .env_example .env
 git submodule update --init --recursive
-docker-compose up -d
+docker-compose up
+# wait until it fully starts, then in another terminal tab:
 ./site/db-benchmarks/test --save=./site/db-benchmarks/results --host=db.localhost --port=80 --username=bench --password=bench
+
+# restart it, so it runs in background
+docker-compose down
+docker-compose up -d
 ```
 
 This should run a full copy of https://db-benchmarks.com on http://localhost (with the db running at http://bench:bench@db.localhost , you need to [add](https://linuxize.com/post/how-to-edit-your-hosts-file/) it to your hosts file).
