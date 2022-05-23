@@ -28,13 +28,14 @@ Clone the repository and update the submodules:
 git clone git@github.com:db-benchmarks/ui.git db-benchmarks-site
 cd db-benchmarks-site
 cp .env_example .env
-git submodule update --init --recursive
+git submodule update --init site/themes/LoveIt
+git submodule update --init --remote site/db-benchmarks
 docker-compose up
+
 # wait until it fully starts, then in another terminal tab:
 ./site/db-benchmarks/test --save=./site/db-benchmarks/results --host=db.localhost --port=80 --username=bench --password=bench
 
-# restart it, so it runs in background
-docker-compose down
+# stop the docker-compose and start it with -d, so it runs in background
 docker-compose up -d
 ```
 
