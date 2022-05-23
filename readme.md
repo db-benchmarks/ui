@@ -28,7 +28,7 @@ Clone the repository and update the submodules:
 git clone git@github.com:db-benchmarks/ui.git db-benchmarks-site
 cd db-benchmarks-site
 cp .env_example .env
-git submodule update --init --recursive --remote
+git submodule update --init --recursive
 docker-compose up -d
 ./site/db-benchmarks/test --save=./site/db-benchmarks/results --host=db.localhost --port=80 --username=bench --password=bench
 ```
