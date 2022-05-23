@@ -4,4 +4,4 @@
 [submodule "site/db-benchmarks"]
 	path = site/db-benchmarks
 	url = git@github.com:db-benchmarks/db-benchmarks.git
-	branch = 885a093
+	branch = main
