@@ -1,4 +1,4 @@
-baseURL = "http://db-benchmarks.com/"
+baseURL = "https://db-benchmarks.com/"
 theme = "LoveIt"
 title = "Fair database benchmarks"
 enableRobotsTXT = true
@@ -97,9 +97,9 @@ enableEmoji = true
   # Social config in home page
   [params.social]
     GitHub = "https://github.com/db-benchmarks/db-benchmarks"
-    Twitter = "xxxx"
-    Instagram = "xxxx"
-    Email = "xxxx@xxxx.com"
+    Twitter = "db_benchmarks"
+#    Instagram = "xxxx"
+    Email = "contact@db-benchmarks.com"
     RSS = true
 
   # Header config
@@ -313,9 +313,9 @@ enableEmoji = true
       # image URL
       images = []
       # Publisher info
-      [params.page.seo.publisher]
-        name = "xxxx"
-        logoUrl = "/images/avatar.png"
+#      [params.page.seo.publisher]
+#        name = "xxxx"
+#        logoUrl = "/images/avatar.png"
 
   # TypeIt config
   [params.typeit]
