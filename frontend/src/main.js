@@ -10,7 +10,7 @@ import Vue from 'vue'
 import App from './App.vue'
 import VueLogger from 'vuejs-logger';
 import VTooltip from 'v-tooltip';
-
+import VueGtag from "vue-gtag";
 import 'bootstrap'
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -28,6 +28,12 @@ const options = {
 Vue.config.productionTip = false
 Vue.use(VueLogger, options);
 Vue.use(VTooltip);
+
+if (process.env.VUE_APP_GA) {
+  Vue.use(VueGtag, {
+    config: { id: process.env.VUE_APP_GA }
+  });
+}
 
 new Vue({
   render: h => h(App),

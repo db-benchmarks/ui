@@ -1,4 +1,6 @@
 //vue.config.js
+const Dotenv = require('dotenv-webpack');
+
 module.exports = {
     chainWebpack: config => {
         config
@@ -7,5 +9,10 @@ module.exports = {
                 args[0].title = "Fair database benchmarks";
                 return args;
             })
+    },
+    configureWebpack: {
+        plugins: [
+            new Dotenv()
+        ]
     }
 }

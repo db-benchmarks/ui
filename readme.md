@@ -82,3 +82,4 @@ docker-compose restart nginx
 # Notes
 
 * The original test results layout was heavily inspired by Clickhouse Benchmarks - https://clickhouse.com/benchmark/dbms/ . Thank you, Alexey Milovidov and Clickhouse team!
+* To enable Google analytics add `VUE_APP_GA` to `.env` and `params.analytics.google.id` to site's `config.toml`
