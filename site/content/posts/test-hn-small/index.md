@@ -48,13 +48,14 @@ The record structure is:
 So far we have made this test available for 4 databases:
 
 * [MySQL](https://www.mysql.com/) - "world's most popular" open source OLTP database,
+* [Percona Server for MySQL](https://www.percona.com/software/mysql-database/percona-server) - free, fully compatible, enhanced and open source drop-in replacement for any MySQL database,
 * [Clickhouse](https://github.com/ClickHouse/ClickHouse) - a powerful OLAP database,
 * [Elasticsearch](https://github.com/elastic/elasticsearch) - general purpose "search and analytics engine",
 * [Manticore Search](https://github.com/manticoresoftware/manticoresearch/) - "database for search", Elasticsearch alternative.
 
 We've tried to make as little changes to database default settings as possible to not give either of them an unfair advantage:
 
-* MySQL: [no tuning](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/hn_small/mysql/init), just `CREATE TABLE ..., FULLTEXT(story_text,story_author,comment_text,comment_author))` and standard [mysql docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml).
+* MySQL and Percona Server for MySQL: [no tuning](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/hn_small/mysql/init), just `CREATE TABLE ..., FULLTEXT(story_text,story_author,comment_text,comment_author))` and standard [mysql docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml).
 * Clickhouse: [no tuning](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/hn/ch/init), just `CREATE TABLE ... ENGINE = MergeTree() ORDER BY id SETTINGS index_granularity = 8192` and standard [clickhouse-server docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml).
 * Elasticsearch: also [no tuning](https://github.com/db-benchmarks/db-benchmarks/tree/main/tests/hn_small/es/logstash) except for `bootstrap.memory_lock=true` since as said on https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_disable_swapping it needs to be done for performance. The [docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml) is also from the vendor.
 * [Manticore Search](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/hn/manticore/generate_manticore_config.php):
@@ -75,9 +76,9 @@ You can find all the results on the [results page](/?cache=fast_avg&tests=hn) by
 
 **Unlike other less transparent and less objective benchmarks we are not making any conclusions, we are just leaving screenshots of the results here:**
 
-### 4 competitors at once
+### All competitors at once
 
-![](4.png)
+![](5.png)
 
 ### MySQL vs Clickhouse
 
@@ -90,6 +91,10 @@ You can find all the results on the [results page](/?cache=fast_avg&tests=hn) by
 ### MySQL vs Manticore Search
 
 ![](my_ms.png)
+
+### MySQL vs Percona Server
+
+![](my_pe.png)
 
 ### Clickhouse vs Elasticsearch
 
