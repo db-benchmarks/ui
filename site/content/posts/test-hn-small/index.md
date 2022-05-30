@@ -60,7 +60,8 @@ We've tried to make as little changes to database default settings as possible t
 * Elasticsearch: also [no tuning](https://github.com/db-benchmarks/db-benchmarks/tree/main/tests/hn_small/es/logstash) except for `bootstrap.memory_lock=true` since as said on https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_disable_swapping it needs to be done for performance. The [docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml) is also from the vendor.
 * [Manticore Search](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/hn/manticore/generate_manticore_config.php):
   - `min_infix_len = 2` since in Elasticsearch by default you can do infix full-text search and it would be unfair advantage if Manticore was running w/o infixes. Unfortunately it's not possible in Clickhouse at all, so it's given the handicap.
-  - and as for the others we use [their own docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/dockers/manticore) + their columnar library (but it's not used in this test).
+  - `secondary_indexes = 1` which enables secondary indexes while filtering (when loading data that's built anyway). Since Elasticsearch uses secondary indexes by default and it's fairly easy to enable the same in Manticore it makes sense to do it. Unfortunately in Clickhouse, MySQL and Percona Server user would have to make quite an effort to do the same, hence it's not done, since it would then be considered a heavy tuning which would then require further tuning of the other databases which would make things too complicated and unfair.
+  - and as for the others we use [their official docker image](https://github.com/db-benchmarks/db-benchmarks/blob/main/dockers/manticore) + their columnar library (but it's not used in this test).
 
 {{% embed file="../about-internal-caches" %}}
 

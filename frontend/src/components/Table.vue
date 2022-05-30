@@ -13,7 +13,11 @@
          v-bind:cache="cache"
          v-bind:names="barNames"
          v-bind:grouped-count="groupedCount"/>
-
+    <div class="container mt-3">
+      <small>
+        ❗Take into account that these final results are based on the below queries and can't be used as an <b>objective</b> metric for an advantage of one database over the others. It's provided for informational purposes only. To make it better fitting your workload it's recommended to uncheck the queries that you don't use.
+      </small>
+    </div>
     <hr>
     <h5>Full results</h5>
     <template v-if="results.length !== 0">

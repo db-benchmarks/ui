@@ -87,9 +87,11 @@ We've tried to make as little changes to database default settings as possible t
   - with [no tuning](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/logs10m/es/logstash/template.json) at all which is probably what most users do
   - with number of [shards equal to the number of CPU cores](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/logs10m/es/logstash_tuned/template.json) on the server, so Elasticsearch can utilize the CPUs more efficiently for lower response time, since as [said](https://www.elastic.co/guide/en/elasticsearch/reference/current/size-your-shards.html#single-thread-per-shard) in Elasticsearch official guide "Each shard runs the search on a single CPU thread". The dataset size is only 3.5 GB, so it's not clear if it's required or not, but that's why we are testing it.
   - `bootstrap.memory_lock=true` since as said on https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_disable_swapping it needs to be done for performance.
-* Manticore Search - [no tuning](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/logs10m/manticore/generate_manticore_config.php), just a plain index built up from the CSV.
+  - the docker image is [standard](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml)
+* Manticore Search is used in a form of [their official docker image + the columnar library they provide](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml):
   - we test Manticore's default row-wise storage
   - and columnar storage since Elasticsearch and Clickhouse don't provide row-oriented stores and it may be more fair to compare with Manticore running in this mode.
+  - we added `secondary_indexes = 1` to the config which enables secondary indexes while filtering (when loading data that's built anyway). Since Elasticsearch uses secondary indexes by default and it's fairly easy to enable the same in Manticore it makes sense to do it. Unfortunately in Clickhouse user would have to make quite an effort to do the same, hence it's not done, since it would then be considered a heavy tuning which would then require further tuning of the other databases which would make things too complicated and unfair.
 
 {{% embed file="../about-internal-caches" %}}
 

@@ -112,9 +112,10 @@ We've tried to make as little changes to database default settings as possible t
   - letting it make 32 shards: (`"number_of_shards": 32`), otherwise it couldn't utilize the CPU which has 32 cores on the server, since as [said](https://www.elastic.co/guide/en/elasticsearch/reference/current/size-your-shards.html#single-thread-per-shard) in Elasticsearch official guide "Each shard runs the search on a single CPU thread".
   - `bootstrap.memory_lock=true` since as said on https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_disable_swapping it needs to be done for performance.
   - the docker image is [standard](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml)
-* Manticore Search is also used in a form of [their own docker image + the columnar library they provide](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml):
+* Manticore Search is also used in a form of [their official docker image + the columnar library they provide](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml):
   - as well as with Elasticsearch we [also use](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/taxi/manticore/generate_manticore_config.php) 32 shards in a form of 32 plain indexes
   - and we use Manticore columnar storage since comparing Manticore's default row-wise storage vs Clickhouse's and Elasticsearch's columnar storages would be not fair on such a large data collection.
+  - we added `secondary_indexes = 1` to the config which enables secondary indexes while filtering (when loading data that's built anyway). Since Elasticsearch uses secondary indexes by default and it's fairly easy to enable the same in Manticore it makes sense to do it. Unfortunately in Clickhouse user would have to make quite an effort to do the same, hence it's not done, since it would then be considered a heavy tuning which would then require further tuning of the other databases which would make things too complicated and unfair.
 
 {{% embed file="../about-internal-caches" %}}
 
