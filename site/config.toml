@@ -55,6 +55,14 @@ enableEmoji = true
     url = "https://github.com/db-benchmarks/db-benchmarks/"
     title = "GitHub"
     weight = 6
+  [[menu.main]]
+    identifier = "twitter"
+    pre = "<i class='fab fa-twitter fa-fw'></i>"
+    post = ""
+    name = ""
+    url = "https://twitter.com/db_benchmarks"
+    title = "Twitter"
+    weight = 7
 [params]
   description = "Fair and open source database benchmarks"
   keywords = ["opensource", "database", "search engine", "open source", "benchmarks"]
