@@ -28,7 +28,6 @@ Clone the repository and update the submodules:
 git clone git@github.com:db-benchmarks/ui.git db-benchmarks-site
 cd db-benchmarks-site
 cp .env_example .env
-git submodule update --init site/themes/LoveIt
 git submodule update --init --remote site/db-benchmarks
 docker-compose up
 
