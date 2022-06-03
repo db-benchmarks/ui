@@ -16,7 +16,7 @@
                 <a href="/about/">About</a> •
                 <a href="/principles/">Testing principles</a> •
                 <a href="/framework/">Test framework</a> •
-                <a href="/posts/">Blog</a> •
+                <a href="/posts/">About tests</a> •
                 <a href="https://github.com/db-benchmarks/db-benchmarks">GitHub <img src="./assets/github.png" height="22" style="vertical-align: middle; padding-bottom: 4px;" /></a> •
                 <a href="https://twitter.com/db_benchmarks">Twitter<img src="./assets/twitter.png" height="22" style="vertical-align: middle; padding-bottom: 3px; padding-left: 4px;" /></a>
             </h4>
