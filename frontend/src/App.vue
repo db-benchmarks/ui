@@ -23,7 +23,20 @@
         </div>
       </div>
     </div>
-
+    <div class="container">
+      <div class="row">
+        <div class="col-12 text-left">
+          <h1 align="center" style="padding-top: 10px;"><a href="https://github.com/db-benchmarks/db-benchmarks">⭐Star us on GitHub⭐</a></h1>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-12 text-left">
+          <div align="center">
+            <small>Open source is hard. It motivates us a lot.</small>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="container">
       <div class="row mt-2">
         <div class="col-12">
