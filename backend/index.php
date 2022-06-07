@@ -46,7 +46,7 @@ class DataGetter
   {
     $curl = curl_init();
 
-    $query = "select test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, engine_name, type, original_query, memory order by original_query asc limit 1000000";
+    $query = "select test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, engine_name, type, original_query, memory order by original_query asc limit 1000000 option max_matches=100000";
     // the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
     //$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
 
