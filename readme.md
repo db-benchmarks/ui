@@ -23,11 +23,13 @@ Please [find instructions here](https://github.com/db-benchmarks/db-benchmarks#s
 
 ## Installation
 
-Clone the repository and update the submodules:
+1. [Add](https://linuxize.com/post/how-to-edit-your-hosts-file/) `db.localhost` to your hosts file unless you want to run it on a specific hostname.
+2. Clone the repository, make `.env`, update the submodule, run the containers and populate the database:
 ```bash
 git clone git@github.com:db-benchmarks/ui.git db-benchmarks-site
 cd db-benchmarks-site
 cp .env_example .env
+# update .env if you want to run it on specific hostname, otherwise it will run on localhost and db.localhost
 git submodule update --init --remote site/db-benchmarks
 docker-compose up
 
@@ -38,7 +40,7 @@ docker-compose up
 docker-compose up -d
 ```
 
-This should run a full copy of https://db-benchmarks.com on http://localhost (with the db running at http://bench:bench@db.localhost , you need to [add](https://linuxize.com/post/how-to-edit-your-hosts-file/) it to your hosts file).
+This should run a full copy of https://db-benchmarks.com on http://localhost (with the db running at http://bench:bench@db.localhost).
 
 To modify the hostname, db username/password update `.env` and:
 ```
