@@ -119,7 +119,7 @@ enableEmoji = true
     # Header title config
     [params.header.title]
       # URL of the LOGO
-      logo = "images/logo.svg"
+      logo = "/images/logo.svg"
       # title name
       name = ""
       # you can add extra information before the name (HTML format is supported), such as icons
