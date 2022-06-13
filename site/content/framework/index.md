@@ -1,5 +1,6 @@
 ---
 draft: false
+title: "About db-benchmarks open source test framework"
 toc:
   enable: false
   auto: false
