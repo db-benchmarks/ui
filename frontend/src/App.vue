@@ -1,32 +1,36 @@
 /* Copyright (C) 2022 Manticore Software Ltd
- * You may use, distribute and modify this code under the
- * terms of the AGPLv3 license.
- *
- * You can find a copy of the AGPLv3 license here
- * https://www.gnu.org/licenses/agpl-3.0.txt
- */
+* You may use, distribute and modify this code under the
+* terms of the AGPLv3 license.
+*
+* You can find a copy of the AGPLv3 license here
+* https://www.gnu.org/licenses/agpl-3.0.txt
+*/
 <template>
 
   <div id="app">
     <div class="container">
       <div class="row">
         <div class="col-12 text-left">
-            <img class="d-block mb-1" src="./assets/logo.svg" style="margin-left: auto; margin-right: auto; width=50%;">
-            <h4 align="center" dir="auto">
-                <a href="/about/">About</a> •
-                <a href="/principles/">Testing principles</a> •
-                <a href="/framework/">Test framework</a> •
-                <a href="/posts/">About tests</a> •
-                <a href="https://github.com/db-benchmarks/db-benchmarks">GitHub <img src="./assets/github.png" height="22" style="vertical-align: middle; padding-bottom: 4px;" /></a> •
-                <a href="https://twitter.com/db_benchmarks">Twitter<img src="./assets/twitter.png" height="22" style="vertical-align: middle; padding-bottom: 3px; padding-left: 4px;" /></a>
-            </h4>
+          <img class="d-block mb-1" src="./assets/logo.svg" style="margin-left: auto; margin-right: auto; width=50%;">
+          <h4 align="center" dir="auto">
+            <a href="/about/">About</a> •
+            <a href="/principles/">Testing principles</a> •
+            <a href="/framework/">Test framework</a> •
+            <a href="/posts/">About tests</a> •
+            <a href="https://github.com/db-benchmarks/db-benchmarks">GitHub <img src="./assets/github.png" height="22"
+                                                                                 style="vertical-align: middle; padding-bottom: 4px;"/></a>
+            •
+            <a href="https://twitter.com/db_benchmarks">Twitter<img src="./assets/twitter.png" height="22"
+                                                                    style="vertical-align: middle; padding-bottom: 3px; padding-left: 4px;"/></a>
+          </h4>
         </div>
       </div>
     </div>
     <div class="container">
       <div class="row">
         <div class="col-12 text-left">
-          <h1 align="center" style="padding-top: 10px;"><a href="https://github.com/db-benchmarks/db-benchmarks">⭐Star us on GitHub⭐</a></h1>
+          <h1 align="center" style="padding-top: 10px;"><a href="https://github.com/db-benchmarks/db-benchmarks">⭐Star
+            us on GitHub⭐</a></h1>
         </div>
       </div>
       <div class="row">
@@ -39,40 +43,45 @@
     </div>
     <div class="container">
       <div class="row mt-2">
-        <div class="col-12">
-          <h4>Engines</h4>
-          <Button v-bind:items="engines"
-                  v-bind:switch="false"
+        <div class="col-1">
+          <h4>Test</h4>
+        </div>
+        <div class="col-11">
+          <ButtonGroup v-bind:items="tests"
+                  v-bind:switch="true"
                   v-bind:capitalize="false"
-                  v-bind:active-items="supportedEngines"
-                  v-on:changed="applySelection(false)"/>
+                  v-on:changed="updateMemory(); applySelection(true, true);"/>
         </div>
       </div>
-      <div class="row mt-2">
-        <div class="col-3">
-          <h4>Result</h4>
-          <Button v-bind:items="cache"
-                  v-bind:switch="false"
-                  v-bind:capitalize="true "
-                  v-on:changed="applySelection(false)"/>
+      <div class="row mt-4">
+        <div class="col-12">
+          <h4>Engines</h4>
+          <EngineGroup v-bind:groups="engineGroups"
+                       v-bind:items="engines"
+                       v-bind:active-items="supportedEngines"
+                       v-on:changed="applySelection(false)">
+          </EngineGroup>
         </div>
-
+      </div>
+      <div class="row mt-4">
         <div class="col-5">
           <h4>RAM limit</h4>
-          <Button v-bind:items="memory"
+          <ButtonGroup v-bind:items="memory"
                   v-bind:switch="true"
                   v-bind:capitalize="false"
                   v-bind:append="'MB'"
                   v-on:changed="applySelection(false, true);"/>
         </div>
 
-        <div class="col-4">
-          <h4>Test</h4>
-          <Button v-bind:items="tests"
-                  v-bind:switch="true"
-                  v-bind:capitalize="false"
-                  v-on:changed="updateMemory(); applySelection(true, true);"/>
+        <div class="col-3">
+          <h4>Result</h4>
+          <ButtonGroup v-bind:items="cache"
+                  v-bind:switch="false"
+                  v-bind:capitalize="true "
+                  v-on:changed="applySelection(false)"/>
         </div>
+
+
       </div>
 
       <div class="row">
@@ -92,19 +101,22 @@
 </template>
 
 <script>
-import Button from "@/components/Button";
-import Table from "@/components/Table";
 import axios from "axios";
+import Table from "@/components/Table";
+import EngineGroup from "@/components/EngineGroup";
+import ButtonGroup from "@/components/ButtonGroup";
 
 export default {
   name: 'App',
   components: {
-    Table,
-    Button
+    ButtonGroup,
+    EngineGroup,
+    Table
   },
   data() {
     return {
       engines: [],
+      engineGroups: {},
       results: [],
       filteredResults: [],
       tests: [],
@@ -225,7 +237,7 @@ export default {
         i++;
       }
 
-      if (selectedEngines.length===0){
+      if (selectedEngines.length === 0) {
         results = [];
       }
 
@@ -241,6 +253,7 @@ export default {
       this.modifyUrl();
       this.resultsCount = results.length;
       this.filteredResults = results;
+      this.parseEnginesGroups();
     },
     modifyUrl() {
       const params = new URLSearchParams({
@@ -334,6 +347,17 @@ export default {
         }
       }
       return result;
+    },
+    parseEnginesGroups() {
+      this.engineGroups = {};
+      for (let engineFullName in this.supportedEngines) {
+
+        let engineName = engineFullName.split('_');
+        if (this.engineGroups[engineName[0]] === undefined) {
+          this.engineGroups[engineName[0]] = [];
+        }
+        this.engineGroups[engineName[0]].push(engineFullName);
+      }
     }
   },
   computed: {
