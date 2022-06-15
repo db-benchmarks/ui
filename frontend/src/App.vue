@@ -48,9 +48,9 @@
         </div>
         <div class="col-11">
           <ButtonGroup v-bind:items="tests"
-                  v-bind:switch="true"
-                  v-bind:capitalize="false"
-                  v-on:changed="updateMemory(); applySelection(true, true);"/>
+                       v-bind:switch="true"
+                       v-bind:capitalize="false"
+                       v-on:changed="updateMemory(); applySelection(true, true);"/>
         </div>
       </div>
       <div class="row mt-4">
@@ -67,18 +67,18 @@
         <div class="col-5">
           <h4>RAM limit</h4>
           <ButtonGroup v-bind:items="memory"
-                  v-bind:switch="true"
-                  v-bind:capitalize="false"
-                  v-bind:append="'MB'"
-                  v-on:changed="applySelection(false, true);"/>
+                       v-bind:switch="true"
+                       v-bind:capitalize="false"
+                       v-bind:append="'MB'"
+                       v-on:changed="applySelection(false, true);"/>
         </div>
 
         <div class="col-3">
           <h4>Result</h4>
           <ButtonGroup v-bind:items="cache"
-                  v-bind:switch="false"
-                  v-bind:capitalize="true "
-                  v-on:changed="applySelection(false)"/>
+                       v-bind:switch="false"
+                       v-bind:capitalize="true "
+                       v-on:changed="applySelection(false)"/>
         </div>
 
 
@@ -129,7 +129,11 @@ export default {
     }
   },
   created() {
-    axios.get("/api").then(response => {
+    let serverUrl = process.env.VUE_APP_API_URL;
+    if (serverUrl === undefined) {
+      serverUrl = '';
+    }
+    axios.get(serverUrl + "/api").then(response => {
       this.results = response.data.result.data;
       this.tests = response.data.result.tests;
       this.engines = response.data.result.engines;
@@ -353,10 +357,20 @@ export default {
       for (let engineFullName in this.supportedEngines) {
 
         let engineName = engineFullName.split('_');
+
+
+        let selected = 0;
+
         if (this.engineGroups[engineName[0]] === undefined) {
-          this.engineGroups[engineName[0]] = [];
+          this.engineGroups[engineName[0]] = {};
         }
-        this.engineGroups[engineName[0]].push(engineFullName);
+
+        for(let row of this.engines){
+          if (row[engineFullName] !== undefined){
+            selected = (row[engineFullName] !== 0 && row[engineFullName] !== false);
+          }
+        }
+        this.engineGroups[engineName[0]][engineFullName] = selected;
       }
     }
   },
