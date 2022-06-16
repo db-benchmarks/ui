@@ -202,7 +202,16 @@ export default {
           }
         }
       }
-      this.memory = memory;
+      this.memory = memory.sort(function (a, b) {
+        if (Object.keys(a)[0] < Object.keys(b)[0]){
+          return 1;
+        }
+        if (Object.keys(a)[0] > Object.keys(b)[0]){
+          return -1;
+        }
+
+        return 0;
+      });
     },
     applySelection(clearQueries = false, unsetUnsupported = false) {
       this.checksums = {};
