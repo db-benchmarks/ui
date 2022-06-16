@@ -181,8 +181,7 @@ class DataGetter
                 'tests'     => $sorted['tests'],
                 'engines'   => $sorted['engines'],
                 'memory'    => $sorted['memory'],
-                'testsInfo' => $testsInfo,
-                'i' => $i
+                'testsInfo' => $testsInfo
             ];
 
             return $data;
