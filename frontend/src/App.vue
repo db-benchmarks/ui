@@ -53,6 +53,11 @@
                        v-on:changed="updateMemory(); applySelection(true, true);"/>
         </div>
       </div>
+      <div class="row mt-2">
+        <div class="col">
+          <TestInfo v-bind:test-info="testsInfo[getSelectedRow(tests)]"></TestInfo>
+        </div>
+      </div>
       <div class="row mt-4">
         <div class="col-12">
           <h4>Engines</h4>
@@ -105,10 +110,12 @@ import axios from "axios";
 import Table from "@/components/Table";
 import EngineGroup from "@/components/EngineGroup";
 import ButtonGroup from "@/components/ButtonGroup";
+import TestInfo from "@/components/TestInfo";
 
 export default {
   name: 'App',
   components: {
+    TestInfo,
     ButtonGroup,
     EngineGroup,
     Table
@@ -120,11 +127,13 @@ export default {
       results: [],
       filteredResults: [],
       tests: [],
+      testsInfo: [],
       memory: [],
       queries: [],
       checksums: {},
       supportedEngines: {},
       resultsCount: 0,
+      selectedTest: 0,
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
     }
   },
@@ -137,6 +146,7 @@ export default {
       this.results = response.data.result.data;
       this.tests = response.data.result.tests;
       this.engines = response.data.result.engines;
+      this.testsInfo = response.data.result.testsInfo;
       this.parseUrl();
       this.updateMemory();
       this.parseUrl();
@@ -365,8 +375,8 @@ export default {
           this.engineGroups[engineName[0]] = {};
         }
 
-        for(let row of this.engines){
-          if (row[engineFullName] !== undefined){
+        for (let row of this.engines) {
+          if (row[engineFullName] !== undefined) {
             selected = (row[engineFullName] !== 0 && row[engineFullName] !== false);
           }
         }
@@ -389,6 +399,9 @@ String.prototype.capitalize = function () {
 <style>
 @import '~bootstrap/dist/css/bootstrap.css';
 
+h4, .h4{
+  font-weight: bold;
+}
 .caption {
   font-weight: 600;
   margin: 10px 20px;

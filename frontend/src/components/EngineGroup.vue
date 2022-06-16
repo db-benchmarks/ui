@@ -6,13 +6,12 @@
 * https://www.gnu.org/licenses/agpl-3.0.txt
 */
 <template>
-  <div>
+  <div id="eg-accordion">
     <div class="row m-2">
       <template v-for="(value, name) in groups">
-        <div class="col-2 align-self-center" :key="name"
+        <div class="col-2 d-flex justify-content-center" :key="name"
              data-toggle="collapse" :data-target="'#collapseExample-'+name" role="button" aria-expanded="false"
-             :aria-controls="'collapseExample-'+name"
-        >
+             :aria-controls="'collapseExample-'+name">
           <img :src="require(`@/assets/logos/${name}.svg`)">
           <span class="engine-badge">{{ getActiveItemsCount(value) }}</span>
         </div>
@@ -21,7 +20,7 @@
 
 
     <template v-for="(value, name) in groups">
-      <div :key="name" class="row m-2 collapse" :id="'collapseExample-'+name">
+      <div :key="name" class="row m-2 collapse multi-collapse" :id="'collapseExample-'+name" :aria-labelledby="'collapseExample-'+name" data-parent="#eg-accordion">
         <div class="col">
           <ButtonGroup v-bind:items="filterItems(name)"
                        v-bind:switch="false"
@@ -81,7 +80,8 @@ export default {
 <style scoped>
 
 img {
-  width: 80px;
+  width: 90%;
+  padding: 10px;
 }
 
 .btn-group.special {
@@ -106,11 +106,13 @@ img {
 
 .engine-badge {
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: 10px;
+  right: 20px;
   border: 2px solid;
   border-radius: 15px;
-  padding: 0 8px 0 8px;
+  padding: 0 6px 0 6px;
   background-color: white;
+  font-size: small;
+  font-weight: bold;
 }
 </style>
