@@ -135,23 +135,54 @@ class DataGetter
 
             krsort($engines, SORT_STRING);
 
-            $sorted = [];
-            foreach (['engines', 'tests', 'memory'] as $item) {
-                $firstKey         = $this->array_key_first($$item);
-                $$item[$firstKey] = 1;
+            for ($i = 1; $i <= 30; $i++) {
+                $sorted = [];
+                $selected=[];
+                foreach (['engines', 'tests', 'memory'] as $item) {
+                    if ($item === 'memory') {
+                        $key = $this->array_key_first($$item);
+                    } else {
+                        $key = $this->array_random_key($$item);
+                    }
 
-                foreach ($$item as $name => $row) {
-                    $sorted[$item][] = [$name => $row];
+                    $selected[$item] = $key;
+
+                    foreach ($$item as $name => $row) {
+                        $sorted[$item][] = [$name => $row];
+                    }
                 }
+
+
+                // Need to select available engine in this test
+
+                if (isset($data[$selected['tests']][$selected['memory']])){
+                    $firstTestQuery = array_shift($data[$selected['tests']][$selected['memory']]);
+
+                    if (isset($firstTestQuery[$selected['engines']])){
+
+                        foreach (['engines', 'tests', 'memory'] as $item) {
+                            foreach ($sorted[$item] as $k=>$v){
+                                if (isset($v[$selected[$item]])){
+                                    $sorted[$item][$k][$selected[$item]] = 1;
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+                }
+
             }
 
 
+
             $data = [
-                'data'       => $data,
-                'tests'      => $sorted['tests'],
-                'engines'    => $sorted['engines'],
-                'memory'     => $sorted['memory'],
+                'data'      => $data,
+                'tests'     => $sorted['tests'],
+                'engines'   => $sorted['engines'],
+                'memory'    => $sorted['memory'],
                 'testsInfo' => $testsInfo,
+                'i' => $i
             ];
 
             return $data;
@@ -163,7 +194,15 @@ class DataGetter
 
     private function array_key_first(array $array)
     {
-        return key(array_slice($array, 0, 1));
+        return array_keys($array)[0];
+    }
+
+    private function array_random_key(array $array)
+    {
+        $keys = array_keys($array);
+        shuffle($keys);
+
+        return $keys[0];
     }
 }
 
