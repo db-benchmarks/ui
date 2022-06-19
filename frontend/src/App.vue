@@ -161,9 +161,9 @@ export default {
     });
   },
   methods: {
-    parseFullServerInfo(fullServerInfo){
+    parseFullServerInfo(fullServerInfo) {
       let parsed = {}
-      for (let testInfo in fullServerInfo){
+      for (let testInfo in fullServerInfo) {
         parsed[testInfo] = JSON.parse(fullServerInfo[testInfo]);
       }
       return parsed;
@@ -202,30 +202,29 @@ export default {
       for (let test in this.tests) {
         for (let name in this.tests[test]) {
           if (this.tests[test][name]) {
-            let i = 0;
+
             for (let memValue in this.results[name]) {
               let obj = {};
-              if (i === 0) {
-                obj[memValue] = 1;
-              } else {
-                obj[memValue] = 0;
-              }
+              obj[memValue] = 0;
               memory.push(obj)
-              i++
             }
           }
         }
       }
-      this.memory = memory.sort(function (a, b) {
-        if (Object.keys(a)[0] < Object.keys(b)[0]){
+
+      let sortedMemory = memory.sort(function (a, b) {
+        if (Object.keys(a)[0] < Object.keys(b)[0]) {
           return 1;
         }
-        if (Object.keys(a)[0] > Object.keys(b)[0]){
+        if (Object.keys(a)[0] > Object.keys(b)[0]) {
           return -1;
         }
 
         return 0;
       });
+
+      sortedMemory[0][Object.keys(sortedMemory[0])[0]] = 1;
+      this.memory = sortedMemory;
     },
     applySelection(clearQueries = false, unsetUnsupported = false) {
       this.checksums = {};
@@ -422,9 +421,10 @@ String.prototype.capitalize = function () {
 <style>
 @import '~bootstrap/dist/css/bootstrap.css';
 
-h4, .h4{
+h4, .h4 {
   font-weight: bold;
 }
+
 .caption {
   font-weight: 600;
   margin: 10px 20px;
