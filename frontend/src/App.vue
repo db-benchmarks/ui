@@ -55,7 +55,10 @@
       </div>
       <div class="row mt-2">
         <div class="col">
-          <TestInfo v-bind:test-info="testsInfo[getSelectedRow(tests)]"></TestInfo>
+          <TestInfo v-bind:test-info="testsInfo[getSelectedRow(tests)]"
+                    v-bind:short-server-info="shortServerInfo[getSelectedRow(tests)]"
+                    v-bind:full-server-info="fullServerInfo[getSelectedRow(tests)]">
+          </TestInfo>
         </div>
       </div>
       <div class="row mt-4">
@@ -128,6 +131,8 @@ export default {
       filteredResults: [],
       tests: [],
       testsInfo: [],
+      shortServerInfo: [],
+      fullServerInfo: [],
       memory: [],
       queries: [],
       checksums: {},
@@ -147,6 +152,8 @@ export default {
       this.tests = response.data.result.tests;
       this.engines = response.data.result.engines;
       this.testsInfo = response.data.result.testsInfo;
+      this.shortServerInfo = response.data.result.shortServerInfo;
+      this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
       this.parseUrl();
       this.updateMemory();
       this.parseUrl();
@@ -154,6 +161,13 @@ export default {
     });
   },
   methods: {
+    parseFullServerInfo(fullServerInfo){
+      let parsed = {}
+      for (let testInfo in fullServerInfo){
+        parsed[testInfo] = JSON.parse(fullServerInfo[testInfo]);
+      }
+      return parsed;
+    },
     unsetUnavailableEngines() {
       for (let engineIndex in this.engines) {
         let engineName = Object.keys(this.engines[engineIndex])[0];

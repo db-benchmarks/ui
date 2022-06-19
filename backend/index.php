@@ -47,7 +47,17 @@ class DataGetter
         $curl = curl_init();
 
         $query
-            = "select test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error), test_info from results where error is NULL and query_timeout = 0 group by test_name, engine_name, type, original_query, memory order by original_query asc limit 1000000 option max_matches=100000";
+            = "SELECT ".
+            "    test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), ".
+            "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error), ".
+            "    test_info, server_info ".
+            "FROM results ".
+            "WHERE error is NULL and query_timeout = 0 ".
+            "GROUP BY test_name, engine_name, type, original_query, memory ".
+            "ORDER BY original_query ASC ".
+            "LIMIT 1000000 ".
+            "OPTION max_matches=100000";
+
         // the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
         //$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
 
@@ -92,7 +102,9 @@ class DataGetter
             $tests   = [];
             $memory  = [];
 
-            $testsInfo = [];
+            $testsInfo       = [];
+            $fullServerInfo  = [];
+            $shortServerInfo = [];
             foreach ($result['hits']['hits'] as $row) {
                 $row                      = $row['_source'];
                 $tests[$row['test_name']] = 0;
@@ -131,13 +143,18 @@ class DataGetter
                 ];
 
                 $testsInfo[$row['test_name']] = $row['test_info'];
+
+                if ( ! isset($fullServerInfo[$row['test_name']])) {
+                    $fullServerInfo[$row['test_name']]  = $row['server_info'];
+                    $shortServerInfo[$row['test_name']] = $this->parseShortServerInfo($row['server_info']);
+                }
             }
 
             krsort($engines, SORT_STRING);
 
             for ($i = 1; $i <= 30; $i++) {
-                $sorted = [];
-                $selected=[];
+                $sorted   = [];
+                $selected = [];
                 foreach (['engines', 'tests', 'memory'] as $item) {
                     if ($item === 'memory') {
                         $key = $this->array_key_first($$item);
@@ -155,14 +172,13 @@ class DataGetter
 
                 // Need to select available engine in this test
 
-                if (isset($data[$selected['tests']][$selected['memory']])){
+                if (isset($data[$selected['tests']][$selected['memory']])) {
                     $firstTestQuery = array_shift($data[$selected['tests']][$selected['memory']]);
 
-                    if (isset($firstTestQuery[$selected['engines']])){
-
+                    if (isset($firstTestQuery[$selected['engines']])) {
                         foreach (['engines', 'tests', 'memory'] as $item) {
-                            foreach ($sorted[$item] as $k=>$v){
-                                if (isset($v[$selected[$item]])){
+                            foreach ($sorted[$item] as $k => $v) {
+                                if (isset($v[$selected[$item]])) {
                                     $sorted[$item][$k][$selected[$item]] = 1;
                                 }
                             }
@@ -171,17 +187,17 @@ class DataGetter
                         break;
                     }
                 }
-
             }
 
 
-
             $data = [
-                'data'      => $data,
-                'tests'     => $sorted['tests'],
-                'engines'   => $sorted['engines'],
-                'memory'    => $sorted['memory'],
-                'testsInfo' => $testsInfo
+                'data'            => $data,
+                'tests'           => $sorted['tests'],
+                'engines'         => $sorted['engines'],
+                'memory'          => $sorted['memory'],
+                'testsInfo'       => $testsInfo,
+                'shortServerInfo' => $shortServerInfo,
+                'fullServerInfo'  => $fullServerInfo,
             ];
 
             return $data;
@@ -202,6 +218,34 @@ class DataGetter
         shuffle($keys);
 
         return $keys[0];
+    }
+
+    private function parseShortServerInfo($info)
+    {
+        $parsedInfo = json_decode($info, true);
+        if (json_last_error() === 0) {
+            if (isset($parsedInfo['cpuInfo'])) {
+                if (preg_match("/model name\t: (.*?)\n/usi", $parsedInfo['cpuInfo'], $matches)) {
+                    $cpuName = $matches[1];
+                }
+
+                $threads = substr_count($parsedInfo['cpuInfo'], 'processor');
+            }
+
+            $shortServerInfo = [];
+            if ( ! empty($cpuName)) {
+                $shortServerInfo[] = $cpuName;
+            }
+
+            if ( ! empty($threads)) {
+                $shortServerInfo[] = $threads." threads in total";
+            }
+
+
+            return implode(', ', $shortServerInfo);
+        }
+
+        return "";
     }
 }
 
