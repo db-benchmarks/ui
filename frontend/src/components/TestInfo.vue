@@ -11,7 +11,7 @@
     <p><b>Server:</b> {{ shortServerInfo }}</p>
     <ModalLargeScroll>
       <template v-slot:trigger>
-        <a class="links" data-toggle="modal" data-target="#exampleModalLong">Show more</a>
+        <a class="links" data-toggle="modal" data-target="#modal-long">Show more</a>
       </template>
       <template v-slot:content>
         <Tabs v-bind:items="fullServerInfo"></Tabs>

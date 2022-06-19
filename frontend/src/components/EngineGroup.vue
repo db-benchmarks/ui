@@ -7,20 +7,24 @@
 */
 <template>
   <div id="eg-accordion">
-    <div class="row m-2">
+    <div class="row mt-4">
       <template v-for="(value, name) in groups">
         <div class="col-2 d-flex justify-content-center" :key="name"
-             data-toggle="collapse" :data-target="'#collapseExample-'+name" role="button" aria-expanded="false"
-             :aria-controls="'collapseExample-'+name">
-          <img :src="require(`@/assets/logos/${name}.svg`)">
-          <span class="engine-badge">{{ getActiveItemsCount(value) }}</span>
+             data-toggle="collapse" :data-target="'#collapse-'+name" role="button" aria-expanded="false"
+             :aria-controls="'collapse-'+name">
+          <div :class="'d-flex engine-block justify-content-center'+ (isAnyActive(name) ? ' active-engine' : '')">
+            <img :src="require(`@/assets/logos/${name}.svg`)">
+            <span class="engine-badge">{{ getActiveItemsCount(value) }}</span>
+          </div>
+
         </div>
       </template>
     </div>
 
 
     <template v-for="(value, name) in groups">
-      <div :key="name" class="row m-2 collapse multi-collapse" :id="'collapseExample-'+name" :aria-labelledby="'collapseExample-'+name" data-parent="#eg-accordion">
+      <div :key="name" class="row mt-4 collapse multi-collapse" :id="'collapse-'+name"
+           :aria-labelledby="'collapse-'+name" data-parent="#eg-accordion">
         <div class="col">
           <ButtonGroup v-bind:items="filterItems(name)"
                        v-bind:switch="false"
@@ -71,8 +75,19 @@ export default {
       return Object.fromEntries(filtered);
     },
     getActiveItemsCount(group) {
-      return Object.values(group).filter((value => value === true)).length;
+      return Object.values(group).filter((value => value === true)).length + '/' + Object.values(group).length;
     },
+    isAnyActive(name) {
+
+      let result = false;
+      Object.values(this.groups[name]).map(function (value) {
+        if (value) {
+          result = true;
+        }
+      })
+
+      return result;
+    }
   }
 }
 </script>
@@ -114,5 +129,21 @@ img {
   background-color: white;
   font-size: small;
   font-weight: bold;
+}
+
+.engine-block {
+  width: 80%;
+}
+
+.active-engine {
+  box-shadow: 0 0 10px #cfcfcf;
+  border-radius: 15px;
+  width: 100%;
+}
+
+.collapsing {
+  -webkit-transition: none;
+  transition: none;
+  display: none;
 }
 </style>

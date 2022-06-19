@@ -3,7 +3,7 @@
     <!-- Button trigger modal -->
     <slot name="trigger"></slot>
     <!-- Modal -->
-    <div class="modal fade" id="exampleModalLong" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle"
+    <div class="modal fade" id="modal-long" tabindex="-1" role="dialog" aria-labelledby="ModalLongTitle"
          aria-hidden="true">
       <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
