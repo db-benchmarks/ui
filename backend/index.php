@@ -158,11 +158,14 @@ class DataGetter
                 foreach (['engines', 'tests', 'memory'] as $item) {
                     if ($item === 'memory') {
                         $key = $this->array_key_first($$item);
+                    } elseif ($item === 'engines') {
+                        $key = $this->array_random_keys($$item);
                     } else {
                         $key = $this->array_random_key($$item);
                     }
 
                     $selected[$item] = $key;
+
 
                     foreach ($$item as $name => $row) {
                         $sorted[$item][] = [$name => $row];
@@ -175,11 +178,17 @@ class DataGetter
                 if (isset($data[$selected['tests']][$selected['memory']])) {
                     $firstTestQuery = array_shift($data[$selected['tests']][$selected['memory']]);
 
-                    if (isset($firstTestQuery[$selected['engines']])) {
+                    if (isset($firstTestQuery[$selected['engines'][0]]) && isset($firstTestQuery[$selected['engines'][1]])) {
                         foreach (['engines', 'tests', 'memory'] as $item) {
                             foreach ($sorted[$item] as $k => $v) {
-                                if (isset($v[$selected[$item]])) {
-                                    $sorted[$item][$k][$selected[$item]] = 1;
+                                if ($item === 'engines') {
+                                    if (in_array(key($v), $selected['engines'])) {
+                                        $sorted[$item][$k][key($v)] = 1;
+                                    }
+                                } else {
+                                    if (isset($v[$selected[$item]])) {
+                                        $sorted[$item][$k][$selected[$item]] = 1;
+                                    }
                                 }
                             }
                         }
@@ -218,6 +227,19 @@ class DataGetter
         shuffle($keys);
 
         return $keys[0];
+    }
+
+    private function array_random_keys(array $array, int $count = 2): array
+    {
+        $keys = array_keys($array);
+        shuffle($keys);
+
+        $selectedKeys = [];
+        for ($k = 0; $k < $count; $k++) {
+            $selectedKeys[] = $keys[$k];
+        }
+
+        return $selectedKeys;
     }
 
     private function parseShortServerInfo($info)
