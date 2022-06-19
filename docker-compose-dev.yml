@@ -10,8 +10,8 @@ services:
       - vuejs
       - hugo
     ports:
-      - 8084:80
-      - 443:443
+      - 8080:80
+#      - 443:443
     restart: always
     # put HOSTNAME to .env
     environment:
