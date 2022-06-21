@@ -26,6 +26,8 @@
 <script>
 import ModalLargeScroll from "@/components/ModalLargeScroll";
 import Tabs from "@/components/Tabs";
+import {marked} from 'marked';
+
 export default {
   name: "TestInfo",
   components: {ModalLargeScroll, Tabs},
@@ -43,7 +45,7 @@ export default {
   computed: {
     getTestInfo() {
       if (this.testInfo !== undefined) {
-        return '<b>Test:</b> ' + this.testInfo.replaceAll('* ', '<br>&nbsp;&nbsp;&nbsp;&nbsp;* ')
+        return marked('**Test:** '+this.testInfo, { sanitize: true });
       }
       return "";
     }
