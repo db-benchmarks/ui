@@ -1,10 +1,10 @@
 /* Copyright (C) 2022 Manticore Software Ltd
- * You may use, distribute and modify this code under the
- * terms of the AGPLv3 license.
- *
- * You can find a copy of the AGPLv3 license here
- * https://www.gnu.org/licenses/agpl-3.0.txt
- */
+* You may use, distribute and modify this code under the
+* terms of the AGPLv3 license.
+*
+* You can find a copy of the AGPLv3 license here
+* https://www.gnu.org/licenses/agpl-3.0.txt
+*/
 <template>
   <div>
     <hr>
@@ -15,7 +15,10 @@
          v-bind:grouped-count="groupedCount"/>
     <div class="container mt-3">
       <small>
-        ❗Take into account that these final results are based on the below queries and can't be used as an <b>objective</b> metric for an advantage of one database over the others. It's provided for informational purposes only. To make it better fitting your workload it's recommended to uncheck the queries that you don't use.
+        ❗Take into account that these final results are based on the below queries and can't be used as an
+        <b>objective</b> metric for an advantage of one database over the others. It's provided for informational
+        purposes only. To make it better fitting your workload it's recommended to uncheck the queries that you don't
+        use.
       </small>
     </div>
     <hr>
@@ -80,7 +83,11 @@
                     v-bind:query="key"
                     v-bind:checked.sync="checkedQueries[row]"
                 />
-                <DiffIcon></DiffIcon>
+                <DiffIcon v-if="engines.length === 2"
+                          v-bind:mismatch="checkCheckSum(row, id+1)"
+                          v-bind:row="row"
+                v-on:showDiff="emitShowDiff">
+                </DiffIcon>
               </template>
               <template v-else>
                 {{ key }}
@@ -187,11 +194,14 @@ export default {
     },
   },
   methods: {
+    emitShowDiff(row){
+      this.$emit('showDiff', row);
+    },
     onlyUnique: function (value, index, self) {
       return self.indexOf(value) === index;
     },
 
-    clickAllQuery:function (event){
+    clickAllQuery: function (event) {
       for (let index in this.checkedQueries) {
         this.checkedQueries[index] = event.target.checked;
       }

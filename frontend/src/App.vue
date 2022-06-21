@@ -99,6 +99,8 @@
                v-bind:check-sum="checksums"
                v-bind:checkedQueries.sync="queries"
                v-on:update:checked="modifyUrl()"
+               v-on:showDiff="showDiff"
+
         />
       </div>
 
@@ -139,20 +141,18 @@ export default {
       supportedEngines: {},
       resultsCount: 0,
       selectedTest: 0,
+      compareIds: [],
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
     }
   },
   created() {
-    let serverUrl = process.env.VUE_APP_API_URL;
-    if (serverUrl === undefined) {
-      serverUrl = '';
-    }
-    axios.get(serverUrl + "/api").then(response => {
+    axios.get(this.getServerUrl + "/api").then(response => {
       this.results = response.data.result.data;
       this.tests = response.data.result.tests;
       this.engines = response.data.result.engines;
       this.testsInfo = response.data.result.testsInfo;
       this.shortServerInfo = response.data.result.shortServerInfo;
+      this.compareIds = response.data.result.compare;
       this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
       this.parseUrl();
       this.updateMemory();
@@ -161,6 +161,24 @@ export default {
     });
   },
   methods: {
+    showDiff(row) {
+      let queries = this.compareIds[this.getSelectedRow(this.tests)][this.getSelectedRow(this.memory)];
+      let engines = queries[Object.keys(queries)[row]];
+      let selectedEngines = this.getSelectedRow(this.engines)
+
+      let ids = [];
+      for (let selectedEngine of selectedEngines) {
+        ids.push(engines[selectedEngine])
+      }
+
+      if (ids.length !== 2) {
+        return;
+      }
+
+      axios.get(this.getServerUrl + "/api?compare=1&id1=" + ids[0] + "&id2=" + ids[1]).then(response => {
+        console.log(response)
+      })
+    },
     parseFullServerInfo(fullServerInfo) {
       let parsed = {}
       for (let testInfo in fullServerInfo) {
@@ -410,6 +428,13 @@ export default {
     getYear() {
       let today = new Date();
       return today.getFullYear();
+    },
+    getServerUrl() {
+      let serverUrl = process.env.VUE_APP_API_URL;
+      if (serverUrl === undefined) {
+        serverUrl = '';
+      }
+      return serverUrl;
     }
   }
 };

@@ -13,9 +13,9 @@ import VTooltip from 'v-tooltip';
 import VueGtag from "vue-gtag";
 import 'bootstrap'
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faCodeCompare } from '@fortawesome/free-solid-svg-icons';
+import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-library.add(faCodeCompare)
+library.add(faCircleInfo)
 
 
 const isProduction = process.env.NODE_ENV === 'production';
