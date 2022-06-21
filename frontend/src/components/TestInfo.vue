@@ -13,6 +13,9 @@
       <template v-slot:trigger>
         <a class="links" data-toggle="modal" data-target="#modal-long">Show more</a>
       </template>
+      <template v-slot:header>
+        Information about the hardware the test was run on and load/resources on the server before the test.
+      </template>
       <template v-slot:content>
         <Tabs v-bind:items="fullServerInfo"></Tabs>
       </template>

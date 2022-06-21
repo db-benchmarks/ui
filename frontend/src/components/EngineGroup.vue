@@ -95,7 +95,7 @@ export default {
 <style scoped>
 
 img {
-  width: 90%;
+  width: 65%;
   padding: 10px;
 }
 
@@ -135,7 +135,7 @@ img {
   width: 80%;
 }
 
-.active-engine {
+div[aria-expanded="true"] {
   box-shadow: 0 0 10px #cfcfcf;
   border-radius: 15px;
   width: 100%;
