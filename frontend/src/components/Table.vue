@@ -80,6 +80,7 @@
                     v-bind:query="key"
                     v-bind:checked.sync="checkedQueries[row]"
                 />
+                <DiffIcon></DiffIcon>
               </template>
               <template v-else>
                 {{ key }}
@@ -125,9 +126,10 @@
 import Bar from "@/components/Bar";
 import QuerySelector from "@/components/QuerySelector";
 import HashCircle from "@/components/HashCircle";
+import DiffIcon from "@/components/DiffIcon";
 
 export default {
-  components: {HashCircle, QuerySelector, Bar},
+  components: {HashCircle, QuerySelector, Bar, DiffIcon},
   props: {
     results: {
       type: Array,

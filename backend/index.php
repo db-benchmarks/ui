@@ -42,25 +42,9 @@ class DataGetter
         die();
     }
 
-    public function query()
+    private function request($query)
     {
         $curl = curl_init();
-
-        $query
-            = "SELECT ".
-            "    test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), ".
-            "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error), ".
-            "    test_info, server_info ".
-            "FROM results ".
-            "WHERE error is NULL and query_timeout = 0 ".
-            "GROUP BY test_name, engine_name, type, original_query, memory ".
-            "ORDER BY original_query ASC ".
-            "LIMIT 1000000 ".
-            "OPTION max_matches=100000";
-
-        // the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
-        //$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
-
         curl_setopt($curl, CURLOPT_URL, "http://db:9308/sql");
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_POSTFIELDS, 'query='.urlencode($query));
@@ -81,6 +65,35 @@ class DataGetter
             return false;
         }
 
+        return $result;
+    }
+
+    public function getRow($firstId, $secondId)
+    {
+        $query = "SELECT * FROM results WHERE id in (".(int) $firstId.",".(int) $secondId.")";
+
+        $result = $this->request($query);
+        $t      = json_decode($result);
+        $this->printResponse($result);
+    }
+
+    public function query()
+    {
+        $query
+            = "SELECT ".
+            "    id, test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), ".
+            "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error), ".
+            "    test_info, server_info ".
+            "FROM results ".
+            "WHERE error is NULL and query_timeout = 0 ".
+            "GROUP BY test_name, engine_name, type, original_query, memory ".
+            "ORDER BY original_query ASC ".
+            "LIMIT 1000000 ".
+            "OPTION max_matches=100000";
+
+        // the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
+        //$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
+        $result = $this->request($query);
 
         $result = $this->perpareResponse($result);
         if ( ! $result) {
@@ -101,11 +114,13 @@ class DataGetter
             $engines = [];
             $tests   = [];
             $memory  = [];
+            $compare = [];
 
             $testsInfo       = [];
             $fullServerInfo  = [];
             $shortServerInfo = [];
             foreach ($result['hits']['hits'] as $row) {
+                $id                       = $row['_id'];
                 $row                      = $row['_source'];
                 $tests[$row['test_name']] = 0;
                 $memory[$row['memory']]   = 0;
@@ -134,8 +149,9 @@ class DataGetter
                     }
                 }
 
-                $data[$row['test_name']][$row['memory']][md5($row['original_query'])]['query'] = $row['original_query'];
-                $data[$row['test_name']][$row['memory']][md5($row['original_query'])][$engine] = [
+                $compare[$row['test_name']][$row['memory']][md5($row['original_query'])][$engine] = $id;
+                $data[$row['test_name']][$row['memory']][md5($row['original_query'])]['query']    = $row['original_query'];
+                $data[$row['test_name']][$row['memory']][md5($row['original_query'])][$engine]    = [
                     'slowest'  => $row['avg(slowest)'],
                     'fastest'  => $row['avg(fastest)'],
                     'fast_avg' => $row['avg(avg_fastest)'],
@@ -207,6 +223,7 @@ class DataGetter
                 'testsInfo'       => $testsInfo,
                 'shortServerInfo' => $shortServerInfo,
                 'fullServerInfo'  => $fullServerInfo,
+                'compare'         => $compare,
             ];
 
             return $data;
@@ -271,6 +288,11 @@ class DataGetter
     }
 }
 
-
 $dg = new DataGetter();
-$dg->query();
+if (isset($_GET['compare']) && isset($_GET['id1']) && isset($_GET['id2'])) {
+    $dg->getRow($_GET['id1'], $_GET['id2']);
+} else {
+    $dg->query();
+}
+
+
