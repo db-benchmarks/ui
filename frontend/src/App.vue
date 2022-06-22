@@ -94,12 +94,13 @@
 
       <div class="row">
         <Table v-bind:engines="getSelectedRow(this.engines)"
-               v-bind:cache="prepareCacheForTable()"
+               v-bind:cache="prepareCacheForTable"
                v-bind:results="filteredResults"
                v-bind:check-sum="checksums"
                v-bind:checkedQueries.sync="queries"
                v-on:update:checked="modifyUrl()"
                v-on:showDiff="showDiff"
+               v-on:showInfo="showInfo"
 
         />
       </div>
@@ -161,6 +162,19 @@ export default {
     });
   },
   methods: {
+    showInfo(row, id) {
+
+      let queries = this.compareIds[this.getSelectedRow(this.tests)][this.getSelectedRow(this.memory)];
+      let engines = queries[Object.keys(queries)[row]];
+      let selectedEngines = this.getSelectedRow(this.engines)
+
+
+      let grouppedCount = this.prepareCacheForTable.length / selectedEngines.length;
+
+      let index = Math.ceil(id / grouppedCount) - 1;
+      let rowId = engines[selectedEngines[index]];
+      console.log(rowId, engines)
+    },
     showDiff(row) {
       let queries = this.compareIds[this.getSelectedRow(this.tests)][this.getSelectedRow(this.memory)];
       let engines = queries[Object.keys(queries)[row]];
@@ -375,13 +389,6 @@ export default {
         });
       }
     },
-    prepareCacheForTable() {
-      let result = [];
-      this.getSelectedRow(this.engines).forEach(() => {
-        result = this.getSelectedRow(this.cache).concat(result)
-      })
-      return result
-    },
     getSelectedRow(obj) {
       let result = [];
       for (let engine in obj) {
@@ -435,7 +442,14 @@ export default {
         serverUrl = '';
       }
       return serverUrl;
-    }
+    },
+    prepareCacheForTable() {
+      let result = [];
+      this.getSelectedRow(this.engines).forEach(() => {
+        result = this.getSelectedRow(this.cache).concat(result)
+      })
+      return result
+    },
   }
 };
 String.prototype.capitalize = function () {

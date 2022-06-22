@@ -74,7 +74,13 @@
               <template v-else>
                 <span>{{ key }} ms</span>
               </template>
-
+              &nbsp;<InfoIcon v-bind:row="row"
+                        v-bind:id="id"
+                        v-bind:hasDiff="checkCheckSum(row, id)"
+                        v-on:showInfo="emitShowInfo"
+                        v-bind:class="checksumRelations[row][id]"
+                        v-bind:stroke-color="getTextColor(row, id)">
+              </InfoIcon>
             </template>
             <template v-else>
               <template v-if="id===0">
@@ -83,8 +89,7 @@
                     v-bind:query="key"
                     v-bind:checked.sync="checkedQueries[row]"
                 />
-                <DiffIcon v-if="engines.length === 2"
-                          v-bind:mismatch="checkCheckSum(row, id+1)"
+                <DiffIcon v-if="engines.length === 2 && checkCheckSum(row, id+1)"
                           v-bind:row="row"
                 v-on:showDiff="emitShowDiff">
                 </DiffIcon>
@@ -93,10 +98,6 @@
                 {{ key }}
               </template>
             </template>
-            <template v-if="checkCheckSum(row, id)">
-              &nbsp;<HashCircle v-bind:cls="checksumRelations[row][id]" v-bind:stroke-color="getTextColor(row, id)"/>
-            </template>
-
           </td>
         </tr>
 
@@ -132,11 +133,11 @@
 <script>
 import Bar from "@/components/Bar";
 import QuerySelector from "@/components/QuerySelector";
-import HashCircle from "@/components/HashCircle";
 import DiffIcon from "@/components/DiffIcon";
+import InfoIcon from "@/components/InfoIcon";
 
 export default {
-  components: {HashCircle, QuerySelector, Bar, DiffIcon},
+  components: {QuerySelector, Bar, DiffIcon, InfoIcon},
   props: {
     results: {
       type: Array,
@@ -194,6 +195,9 @@ export default {
     },
   },
   methods: {
+    emitShowInfo(row, id){
+      this.$emit('showInfo', row, id);
+    },
     emitShowDiff(row){
       this.$emit('showDiff', row);
     },
@@ -624,7 +628,6 @@ export default {
 .table-value {
   font-weight: bold;
 }
-
 h5 {
   color: #227596;
   margin-left: 15px;

@@ -1,5 +1,5 @@
 <template>
-  <font-awesome-icon :class="'float-right cursor ' + color" icon="fa-solid fa-circle-info" v-on:click="showDiff"/>
+  <font-awesome-icon :class="'float-right cursor '" icon="fa-solid fa-arrow-down-up-across-line" v-on:click="showDiff"/>
 </template>
 <script>
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
@@ -8,19 +8,8 @@ export default {
   name: "DiffIcon",
   components: {FontAwesomeIcon},
   props: {
-    mismatch: {
-      required: false
-    },
     row: {
       required: true
-    }
-  },
-  computed: {
-    color: function () {
-      if (this.mismatch === false) {
-        return "green";
-      }
-      return "red";
     }
   },
   methods: {
