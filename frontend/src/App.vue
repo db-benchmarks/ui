@@ -29,8 +29,7 @@
     <div class="container">
       <div class="row">
         <div class="col-12 text-left">
-          <h1 align="center" style="padding-top: 10px;"><a href="https://github.com/db-benchmarks/db-benchmarks">⭐Star
-            us on GitHub⭐</a></h1>
+          <h1 align="center" style="padding-top: 10px;"><a href="https://github.com/db-benchmarks/db-benchmarks">⭐Star us on GitHub⭐</a></h1>
         </div>
       </div>
       <div class="row">
