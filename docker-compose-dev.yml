@@ -1,0 +1,75 @@
+version: '3'
+
+services:
+  nginx:
+    container_name: benchmarks_nginx
+    build:
+      context: ./nginx/
+    depends_on:
+      - php
+      - vuejs
+      - hugo
+    ports:
+      - 8080:80
+#      - 443:443
+    restart: always
+    # put HOSTNAME to .env
+    environment:
+      - HOSTNAME=${HOSTNAME}
+      - NGINX_ENVSUBST_TEMPLATE_DIR=${NGINX_TEMPLATES_DIR}
+    volumes:
+      - ./nginx/templates/:/etc/nginx/templates/:ro
+      - ./nginx/conf/:/etc/nginx/conf.d/:rw
+      - ./nginx/ssl/:/etc/letsencrypt/:rw
+      - ./frontend/:/frontend/:ro
+      - ./backend/:/backend/:ro
+      - ./site/public/:/site/:ro
+      - ./logs/:/var/log/nginx/:rw
+  php:
+    container_name: benchmarks_php
+    build:
+      context: ./backend/
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./backend:/backend/:ro
+  vuejs:
+    depends_on:
+      - hugo
+    container_name: benchmarks_vuejs
+    image: node:10.19.0-slim
+    volumes:
+      - ./frontend/:/app/:rw
+      - ./site/public/:/site/:rw
+      - .env:/app/.env:ro
+    command: bash -c "cd /app && npm install && npm run build && cp -r /app/dist/* /site/"
+  hugo:
+    container_name: benchmarks_hugo
+    image: klakegg/hugo:0.68.3-ext
+    volumes:
+      - ./site/:/src:rw
+    environment:
+      - HUGO_DESTINATION=/src/public
+  db:
+    container_name: benchmarks_db
+    build:
+      context: ./db/
+    restart: always
+    volumes:
+      - ./db/data:/var/lib/manticore
+    # commment out the below if you don't need Manticore to be accessible locally at port 19306, it's safe the other containers will still be able to access it
+    ports:
+      - "127.0.0.1:19306:9306"
+  auth:
+    container_name: benchmarks_auth
+    image: quay.io/dtan4/nginx-basic-auth-proxy:latest
+    depends_on:
+      - db
+    restart: always
+    # don't forget to put DB_USERNAME and DB_PASSWORD to .env
+    environment:
+      - BASIC_AUTH_USERNAME=${DB_USERNAME}
+      - BASIC_AUTH_PASSWORD=${DB_PASSWORD}
+      - PROXY_PASS=http://db:9308
+      - SERVER_NAME=db.${HOSTNAME}
