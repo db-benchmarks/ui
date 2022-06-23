@@ -1,0 +1,4 @@
+In this test we make **as little changes to database default settings as possible** to not give either of them an unfair advantage.
+Testing at max tuning is no less important, but it's a subject for another benchmark.
+Here we want to understand what latency a regular non-experienced user can get after just installing a database and running it with its default settings.
+But to make it fair to compare one with another we still had to change a few settings:

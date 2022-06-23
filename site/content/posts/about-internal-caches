@@ -1,11 +1,30 @@
-We've also configured the databases to not use any internal caches:
+## About caches
+
+We've also configured the databases to not use any internal caches. Why this is important:
+1. In this benchmark, we conduct an **accurate latency measurement** to find out what response time users can expect if they run one of the tested queries at a random moment, not after running the same query many times consequently.
+2. Any cache is a shortcut to low latency. As written in [Wikipedia](https://en.wikipedia.org/wiki/Cache_(computing)) "cache stores data so that future requests for that data can be served faster". But caches are different, they can be divided into 2 main groups:
+   - 👌 those that just cache raw data stored on disk. For example many databases use `mmap()` to map the data stored on disk to memory, access it easily and let the operating system take care about the rest (reading it from disk when there's free memory, removing it from memory when it's needed for something more important etc). This is ok in terms of performance testing, because we let **each** database leverage the benefit of using the OS page cache (or its internal similar cache that just reads data from disk)
+     **That's exactly what we do in this benchmark.**
+   - ❗ those that are used to save results of previous calculations. And it's fine in many cases, but in terms of this benchmark letting database enable such a cache is a bad idea, because:
+     - it breaks proper measuring: instead of measuring calculation time you start measuring how long it takes to find a value by a key in memory. It's not something we want to do in this test (but it's interesting in general and we'll perhaps do it in the future and publish some article "Benchmark of caches").
+     - even if they save not a full result of a particular query, but results of its sub-calculations it's not good, because it breaks the idea of the test - "what response time users can expect if they run one of the tested queries at a random moment".
+     - some databases have such a cache (it's usually called "query cache"), others don't so if we don't disable database internal caches we'll give an unfair advantage to those having that.
+
+     So we do everything to make sure none of the database does this kind of caching.
+
+What exactly we do to achieve that:
 * Clickhouse:
-  - `SYSTEM DROP MARK CACHE`, `SYSTEM DROP UNCOMPRESSED CACHE`, `SYSTEM DROP COMPILED EXPRESSION CACHE` [after each query](https://github.com/db-benchmarks/db-benchmarks/blob/main/plugins/clickhouse.php).
+  - `SYSTEM DROP MARK CACHE`, `SYSTEM DROP UNCOMPRESSED CACHE`, `SYSTEM DROP COMPILED EXPRESSION CACHE` [before testing each new query](https://github.com/db-benchmarks/db-benchmarks/blob/main/plugins/clickhouse.php) (not each attempt of the same query).
 * Elasticsearch:
   - `"index.queries.cache.enabled": false` in its configuration
-  - `/_cache/clear?request=true&query=true&fielddata=true` [after each query](https://github.com/db-benchmarks/db-benchmarks/blob/main/plugins/elasticsearch.php).
-* For Manticore Search in its configuration file:
+  - `/_cache/clear?request=true&query=true&fielddata=true` [before testing each new query](https://github.com/db-benchmarks/db-benchmarks/blob/main/plugins/elasticsearch.php) (not each attempt of the same query).
+* Manticore Search (in configuration file):
   - `qcache_max_bytes = 0`
   - `docstore_cache_size = 0`
 * Operating system:
-  - we do `echo 3 > /proc/sys/vm/drop_caches; sync` before each new query
+  - we do `echo 3 > /proc/sys/vm/drop_caches; sync` before each **NEW** query (**NOT** each attempt). I.e. for each new query we:
+    - stop database
+    - drop OS cache
+    - start it back
+    - make the very first cold query and measure its time
+    - and make tens more attempts (up to 100 or until the coefficient of variation is low enough to consider the test results high quality)

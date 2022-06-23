@@ -1,5 +1,5 @@
 Remember that **the only high quality metric is "Fast avg" since it guarantees low [coefficient of variation](https://en.wikipedia.org/wiki/Coefficient_of_variation) and high queries count conducted for each query**. The other 2 ("Fastest" and "Slowest") are provided with no guarantee since:
-* **Slowest** - is a single attempt result, in most cases the very first coldest query. Even though we purge OS cache before each cold query it can't be considered stable. So it can be used for informational purposes and is greyed out in the below summary.
+* **Slowest** - is a single attempt result, in most cases the very first coldest query. Even though we purge OS cache before each cold query it can't be considered stable. So it can be used for informational purposes only (even though many benchmark authors publish such results without any disclaimer).
 * **Fastest** - just the very fastest result, it should be in most cases similar to the "Fast avg" metric, but can be more volatile from run to run.
 
 Remember the tests including the results are 100% transparent as well as everything in this project, so:
