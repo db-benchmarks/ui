@@ -31,6 +31,7 @@ services:
     restart: always
     volumes:
       - ./backend:/backend/:ro
+      - ./backend/php_memory_limit.ini:/usr/local/etc/php/conf.d/php_memory_limit.ini:ro
   vuejs:
     depends_on:
       - hugo
@@ -55,7 +56,6 @@ services:
     restart: always
     volumes:
       - ./db/data:/var/lib/manticore
-      - ./backend/php_memory_limit.ini:/usr/local/etc/php/conf.d/php_memory_limit.ini:ro
     # commment out the below if you don't need Manticore to be accessible locally at port 19306, it's safe the other containers will still be able to access it
     ports:
       - "127.0.0.1:19306:9306"

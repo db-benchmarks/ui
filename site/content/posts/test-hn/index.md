@@ -50,7 +50,7 @@ So far we have made this test available for 3 databases:
 * [Elasticsearch](https://github.com/elastic/elasticsearch) - general purpose "search and analytics engine",
 * [Manticore Search](https://github.com/manticoresoftware/manticoresearch/) - "database for search", Elasticsearch alternative.
 
-We've tried to make as little changes to database default settings as possible to not give either of them an unfair advantage:
+{{% embed file="../about-needed-settings" %}}
 
 * Clickhouse: [no tuning](https://github.com/db-benchmarks/db-benchmarks/blob/main/tests/hn/ch/init), just `CREATE TABLE ... ENGINE = MergeTree() ORDER BY id` and standard [clickhouse-server](https://github.com/db-benchmarks/db-benchmarks/blob/main/docker-compose.yml) docker image.
 * Elasticsearch: as we saw in [another test](/test-logs10m/#elasticsearch-with-no-tuning-vs-tuned) sharding can help Elasticsearch signficantly, so given 100+ M documents is not the smallest dataset we decided it would be more fair to:
