@@ -84,3 +84,16 @@ docker-compose restart nginx
 
 * The original test results layout was heavily inspired by Clickhouse Benchmarks - https://clickhouse.com/benchmark/dbms/ . Thank you, Alexey Milovidov and Clickhouse team!
 * To enable Google analytics add `VUE_APP_GA` to `.env` and `params.analytics.google.id` to site's `config.toml`
+
+# Development environment
+
+There is `docker-compose-dev.yml` that you can use for easier development and maintenance. It enables php x-debug for breakpoints and changes default Nginx port to `8080`
+
+#### Backend
+
+`index.php` is already mounted as a volume into the docker container, so you don't need to rebuild it after each change in the backend code.
+It's available on `localhost:8080/api`
+
+#### Frontend
+
+Add backend API URL via env. var.  `VUE_APP_API_URL="http://localhost:8080"` to `/frontend/.env` and run `vue-cli-service serve`. That's all you need for local frontend development.

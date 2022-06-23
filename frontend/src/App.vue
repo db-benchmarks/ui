@@ -1,25 +1,28 @@
 /* Copyright (C) 2022 Manticore Software Ltd
- * You may use, distribute and modify this code under the
- * terms of the AGPLv3 license.
- *
- * You can find a copy of the AGPLv3 license here
- * https://www.gnu.org/licenses/agpl-3.0.txt
- */
+* You may use, distribute and modify this code under the
+* terms of the AGPLv3 license.
+*
+* You can find a copy of the AGPLv3 license here
+* https://www.gnu.org/licenses/agpl-3.0.txt
+*/
 <template>
 
   <div id="app">
     <div class="container">
       <div class="row">
         <div class="col-12 text-left">
-            <img class="d-block mb-1" src="./assets/logo.svg" style="margin-left: auto; margin-right: auto; width=50%;">
-            <h4 align="center" dir="auto">
-                <a href="/about/">About</a> •
-                <a href="/principles/">Testing principles</a> •
-                <a href="/framework/">Test framework</a> •
-                <a href="/posts/">About tests</a> •
-                <a href="https://github.com/db-benchmarks/db-benchmarks">GitHub <img src="./assets/github.png" height="22" style="vertical-align: middle; padding-bottom: 4px;" /></a> •
-                <a href="https://twitter.com/db_benchmarks">Twitter<img src="./assets/twitter.png" height="22" style="vertical-align: middle; padding-bottom: 3px; padding-left: 4px;" /></a>
-            </h4>
+          <img class="d-block mb-1" src="./assets/logo.svg" style="margin-left: auto; margin-right: auto; width=50%;">
+          <h4 align="center" dir="auto">
+            <a href="/about/">About</a> •
+            <a href="/principles/">Testing principles</a> •
+            <a href="/framework/">Test framework</a> •
+            <a href="/posts/">About tests</a> •
+            <a href="https://github.com/db-benchmarks/db-benchmarks">GitHub <img src="./assets/github.png" height="22"
+                                                                                 style="vertical-align: middle; padding-bottom: 4px;"/></a>
+            •
+            <a href="https://twitter.com/db_benchmarks">Twitter<img src="./assets/twitter.png" height="22"
+                                                                    style="vertical-align: middle; padding-bottom: 3px; padding-left: 4px;"/></a>
+          </h4>
         </div>
       </div>
     </div>
@@ -39,40 +42,53 @@
     </div>
     <div class="container">
       <div class="row mt-2">
-        <div class="col-12">
-          <h4>Engines</h4>
-          <Button v-bind:items="engines"
-                  v-bind:switch="false"
-                  v-bind:capitalize="false"
-                  v-bind:active-items="supportedEngines"
-                  v-on:changed="applySelection(false)"/>
+        <div class="col-1">
+          <h4>Test</h4>
+        </div>
+        <div class="col-11">
+          <ButtonGroup v-bind:items="tests"
+                       v-bind:switch="true"
+                       v-bind:capitalize="false"
+                       v-on:changed="updateMemory(); applySelection(true, true);"/>
         </div>
       </div>
       <div class="row mt-2">
-        <div class="col-3">
-          <h4>Result</h4>
-          <Button v-bind:items="cache"
-                  v-bind:switch="false"
-                  v-bind:capitalize="true "
-                  v-on:changed="applySelection(false)"/>
+        <div class="col">
+          <TestInfo v-bind:test-info="testsInfo[getSelectedRow(tests)]"
+                    v-bind:short-server-info="shortServerInfo[getSelectedRow(tests)]"
+                    v-bind:full-server-info="fullServerInfo[getSelectedRow(tests)]">
+          </TestInfo>
         </div>
-
+      </div>
+      <div class="row mt-4">
+        <div class="col-12">
+          <h4>Engines</h4>
+          <EngineGroup v-bind:groups="engineGroups"
+                       v-bind:items="engines"
+                       v-bind:active-items="supportedEngines"
+                       v-on:changed="applySelection(false)">
+          </EngineGroup>
+        </div>
+      </div>
+      <div class="row mt-4">
         <div class="col-5">
           <h4>RAM limit</h4>
-          <Button v-bind:items="memory"
-                  v-bind:switch="true"
-                  v-bind:capitalize="false"
-                  v-bind:append="'MB'"
-                  v-on:changed="applySelection(false, true);"/>
+          <ButtonGroup v-bind:items="memory"
+                       v-bind:switch="true"
+                       v-bind:capitalize="false"
+                       v-bind:append="'MB'"
+                       v-on:changed="applySelection(false, true);"/>
         </div>
 
-        <div class="col-4">
-          <h4>Test</h4>
-          <Button v-bind:items="tests"
-                  v-bind:switch="true"
-                  v-bind:capitalize="false"
-                  v-on:changed="updateMemory(); applySelection(true, true);"/>
+        <div class="col-3">
+          <h4>Result</h4>
+          <ButtonGroup v-bind:items="cache"
+                       v-bind:switch="false"
+                       v-bind:capitalize="true "
+                       v-on:changed="applySelection(false)"/>
         </div>
+
+
       </div>
 
       <div class="row">
@@ -92,35 +108,51 @@
 </template>
 
 <script>
-import Button from "@/components/Button";
-import Table from "@/components/Table";
 import axios from "axios";
+import Table from "@/components/Table";
+import EngineGroup from "@/components/EngineGroup";
+import ButtonGroup from "@/components/ButtonGroup";
+import TestInfo from "@/components/TestInfo";
 
 export default {
   name: 'App',
   components: {
-    Table,
-    Button
+    TestInfo,
+    ButtonGroup,
+    EngineGroup,
+    Table
   },
   data() {
     return {
       engines: [],
+      engineGroups: {},
       results: [],
       filteredResults: [],
       tests: [],
+      testsInfo: [],
+      shortServerInfo: [],
+      fullServerInfo: [],
       memory: [],
       queries: [],
       checksums: {},
       supportedEngines: {},
       resultsCount: 0,
+      selectedTest: 0,
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
     }
   },
   created() {
-    axios.get("/api").then(response => {
+    let serverUrl = process.env.VUE_APP_API_URL;
+    if (serverUrl === undefined) {
+      serverUrl = '';
+    }
+    axios.get(serverUrl + "/api").then(response => {
       this.results = response.data.result.data;
       this.tests = response.data.result.tests;
       this.engines = response.data.result.engines;
+      this.testsInfo = response.data.result.testsInfo;
+      this.shortServerInfo = response.data.result.shortServerInfo;
+      this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
       this.parseUrl();
       this.updateMemory();
       this.parseUrl();
@@ -128,6 +160,13 @@ export default {
     });
   },
   methods: {
+    parseFullServerInfo(fullServerInfo) {
+      let parsed = {}
+      for (let testInfo in fullServerInfo) {
+        parsed[testInfo] = JSON.parse(fullServerInfo[testInfo]);
+      }
+      return parsed;
+    },
     unsetUnavailableEngines() {
       for (let engineIndex in this.engines) {
         let engineName = Object.keys(this.engines[engineIndex])[0];
@@ -162,21 +201,29 @@ export default {
       for (let test in this.tests) {
         for (let name in this.tests[test]) {
           if (this.tests[test][name]) {
-            let i = 0;
+
             for (let memValue in this.results[name]) {
               let obj = {};
-              if (i === 0) {
-                obj[memValue] = 1;
-              } else {
-                obj[memValue] = 0;
-              }
+              obj[memValue] = 0;
               memory.push(obj)
-              i++
             }
           }
         }
       }
-      this.memory = memory;
+
+      let sortedMemory = memory.sort(function (a, b) {
+        if (Object.keys(a)[0] < Object.keys(b)[0]) {
+          return 1;
+        }
+        if (Object.keys(a)[0] > Object.keys(b)[0]) {
+          return -1;
+        }
+
+        return 0;
+      });
+
+      sortedMemory[0][Object.keys(sortedMemory[0])[0]] = 1;
+      this.memory = sortedMemory;
     },
     applySelection(clearQueries = false, unsetUnsupported = false) {
       this.checksums = {};
@@ -225,7 +272,7 @@ export default {
         i++;
       }
 
-      if (selectedEngines.length===0){
+      if (selectedEngines.length === 0) {
         results = [];
       }
 
@@ -241,6 +288,7 @@ export default {
       this.modifyUrl();
       this.resultsCount = results.length;
       this.filteredResults = results;
+      this.parseEnginesGroups();
     },
     modifyUrl() {
       const params = new URLSearchParams({
@@ -334,6 +382,27 @@ export default {
         }
       }
       return result;
+    },
+    parseEnginesGroups() {
+      this.engineGroups = {};
+      for (let engineFullName in this.supportedEngines) {
+
+        let engineName = engineFullName.split('_');
+
+
+        let selected = 0;
+
+        if (this.engineGroups[engineName[0]] === undefined) {
+          this.engineGroups[engineName[0]] = {};
+        }
+
+        for (let row of this.engines) {
+          if (row[engineFullName] !== undefined) {
+            selected = (row[engineFullName] !== 0 && row[engineFullName] !== false);
+          }
+        }
+        this.engineGroups[engineName[0]][engineFullName] = selected;
+      }
     }
   },
   computed: {
@@ -350,6 +419,10 @@ String.prototype.capitalize = function () {
 
 <style>
 @import '~bootstrap/dist/css/bootstrap.css';
+
+h4, .h4 {
+  font-weight: bold;
+}
 
 .caption {
   font-weight: 600;

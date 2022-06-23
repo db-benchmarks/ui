@@ -10,8 +10,8 @@ services:
       - vuejs
       - hugo
     ports:
-      - 80:80
-      - 443:443
+      - 8080:80
+#      - 443:443
     restart: always
     # put HOSTNAME to .env
     environment:
@@ -27,11 +27,13 @@ services:
       - ./logs/:/var/log/nginx/:rw
   php:
     container_name: benchmarks_php
-    image: php:7-fpm
+    build:
+      context: ./backend/
     restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./backend:/backend/:ro
-      - ./backend/php_memory_limit.ini:/usr/local/etc/php/conf.d/php_memory_limit.ini:ro
   vuejs:
     depends_on:
       - hugo
