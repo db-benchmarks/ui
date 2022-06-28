@@ -5,7 +5,7 @@
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 
 export default {
-  name: "DiffIcon",
+  name: "InfoIcon",
   components: {FontAwesomeIcon},
   props: {
     row: {

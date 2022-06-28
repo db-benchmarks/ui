@@ -89,7 +89,7 @@
                     v-bind:query="key"
                     v-bind:checked.sync="checkedQueries[row]"
                 />
-                <DiffIcon v-if="engines.length === 2 && checkCheckSum(row, id+1)"
+                <DiffIcon v-if="engines.length === 2 && checkedQueries[row] && checkCheckSum(row, id+1)"
                           v-bind:row="row"
                 v-on:showDiff="emitShowDiff">
                 </DiffIcon>

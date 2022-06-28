@@ -74,20 +74,87 @@ class DataGetter
 
         $decodedResult = json_decode($this->request($query), true);
         if ($decodedResult) {
-            $this->printResponse($this->parseSingleInfo($decodedResult['hits']));
+            if ( ! isset($decodedResult['hits']['hits'][0]['_source'])) {
+                $this->printResponse('Can\t parse results for requested row', self::STATUS_ERROR, 404);
+            }
+
+            $response = $this->parseSingleInfo($decodedResult['hits']['hits'][0]['_source']);
+            unset($response['engine']);
+            $this->printResponse($response);
         }
 
         $this->printResponse(['message' => 'Requested row not found'], self::STATUS_ERROR, 404);
     }
 
-    private function parseSingleInfo(array $row)
+    public function getDiff($firstId, $secondId)
     {
-        if ( ! isset($row['hits'][0]['_source'])) {
-            $this->printResponse('Can\t parse results for requested row', self::STATUS_ERROR, 404);
+        $query = "SELECT * FROM results WHERE id in (".(int) $firstId.",".(int) $secondId.")";
+
+        $decodedResult = json_decode($this->request($query), true);
+        if ($decodedResult && count($decodedResult['hits']['hits']) === 2) {
+            $diff = [];
+            foreach ($decodedResult['hits']['hits'] as $row) {
+                $diff[] = $this->parseSingleInfo($row['_source']);
+            }
+
+            $this->printResponse($this->getSystemDiff($diff[0], $diff[1]));
         }
 
-        $row = $row['hits'][0]['_source'];
+        $this->printResponse(['message' => 'Requested rows not found'], self::STATUS_ERROR, 404);
+    }
 
+    private function getSystemDiff($rowFirst, $rowSecond)
+    {
+        $rowFirstFileName  = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.$rowFirst['engine'];
+        $rowSecondFileName = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.$rowSecond['engine'];
+        unset($rowFirst['engine'], $rowSecond['engine']);
+        $keys = array_keys($rowFirst);
+
+        $compare = [];
+        foreach ($keys as $key) {
+            if (is_array($rowFirst[$key])) {
+                $rowFirst[$key] = $this->formatArrayToText($rowFirst[$key]);
+            }
+
+            if (is_array($rowSecond[$key])) {
+                $rowSecond[$key] = $this->formatArrayToText($rowSecond[$key]);
+            }
+
+            file_put_contents($rowFirstFileName, $rowFirst[$key]."\n");
+            file_put_contents($rowSecondFileName, $rowSecond[$key]."\n");
+
+
+            $command = 'diff -U 1000000 -u '.$rowFirstFileName.' '.$rowSecondFileName;
+            $output  = [];
+            exec($command, $output, $exitCode);
+            if ($exitCode <= 1) {
+                if ($output !== []) {
+                    $compare[$key] = implode("\n", $output);
+                } else {
+                    $compare[$key]
+                        = "diff --git $rowFirstFileName $rowFirstFileName\n--- $rowFirstFileName\n+++ $rowSecondFileName\nNo diff\n"
+                        .$rowFirst[$key]."+".$rowFirst[$key];
+                }
+            } else {
+                $this->printResponse(['message' => 'Error during diff generation'], self::STATUS_ERROR, 400);
+            }
+        }
+
+        return $compare;
+    }
+
+    private function formatArrayToText($array)
+    {
+        $formatted = '';
+        foreach ($array as $k => $v) {
+            $formatted .= "$k: $v\n";
+        }
+
+        return $formatted;
+    }
+
+    private function parseSingleInfo(array $row)
+    {
         return [
             'query'       => [
                 'original_query' => $row['original_query'],
@@ -110,16 +177,8 @@ class DataGetter
             'limits'      => [
                 'memory' => $row['memory'],
             ],
+            'engine'      => $row['engine_name'].'_'.$row['type'],
         ];
-    }
-
-    public function getDiff($firstId, $secondId)
-    {
-        $query = "SELECT * FROM results WHERE id in (".(int) $firstId.",".(int) $secondId.")";
-
-        $result = $this->request($query);
-        $t      = json_decode($result);
-        $this->printResponse($result);
     }
 
     public function query()

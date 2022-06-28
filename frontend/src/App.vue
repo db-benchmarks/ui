@@ -105,6 +105,7 @@
         />
       </div>
       <QueryInfo v-bind:tabsContent="parsedQueryInfo"></QueryInfo>
+      <QueryDiff v-bind:diff="diff"></QueryDiff>
       <footer class="my-5 pt-5 text-muted text-center text-small">
       </footer>
     </div>
@@ -119,10 +120,12 @@ import ButtonGroup from "@/components/ButtonGroup";
 import TestInfo from "@/components/TestInfo";
 import QueryInfo from "@/components/QueryInfo";
 import JQuery from 'jquery'
+import QueryDiff from "@/components/QueryDiff";
 
 export default {
   name: 'App',
   components: {
+    QueryDiff,
     QueryInfo,
     TestInfo,
     ButtonGroup,
@@ -148,6 +151,7 @@ export default {
       queryInfo: {},
       parsedQueryInfo: {},
       compareIds: [],
+      diff: {},
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
     }
   },
@@ -178,7 +182,7 @@ export default {
 
           text += '</ul>';
           this.parsedQueryInfo[tab] = text;
-        }else {
+        } else {
           this.parsedQueryInfo[tab] = this.queryInfo[tab];
         }
       }
@@ -200,21 +204,11 @@ export default {
       })
     },
     showDiff(row) {
-      let queries = this.compareIds[this.getSelectedRow(this.tests)][this.getSelectedRow(this.memory)];
-      let engines = queries[Object.keys(queries)[row]];
-      let selectedEngines = this.getSelectedRow(this.engines)
-
-      let ids = [];
-      for (let selectedEngine of selectedEngines) {
-        ids.push(engines[selectedEngine])
-      }
-
-      if (ids.length !== 2) {
-        return;
-      }
-
+      let ids = Object.values(this.compareIds[row]);
+      console.log(row, this.compareIds[row])
       axios.get(this.getServerUrl + "/api?compare=1&id1=" + ids[0] + "&id2=" + ids[1]).then(response => {
-        console.log(response)
+        this.diff = response.data.result;
+        JQuery('#modal-query-diff').modal('show');
       })
     },
     parseFullServerInfo(fullServerInfo) {
