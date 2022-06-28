@@ -153,7 +153,6 @@ export default {
       this.engines = response.data.result.engines;
       this.testsInfo = response.data.result.testsInfo;
       this.shortServerInfo = response.data.result.shortServerInfo;
-      this.compareIds = response.data.result.compare;
       this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
       this.parseUrl();
       this.updateMemory();
@@ -164,16 +163,16 @@ export default {
   methods: {
     showInfo(row, id) {
 
-      let queries = this.compareIds[this.getSelectedRow(this.tests)][this.getSelectedRow(this.memory)];
-      let engines = queries[Object.keys(queries)[row]];
       let selectedEngines = this.getSelectedRow(this.engines)
-
-
       let grouppedCount = this.prepareCacheForTable.length / selectedEngines.length;
-
       let index = Math.ceil(id / grouppedCount) - 1;
-      let rowId = engines[selectedEngines[index]];
-      console.log(rowId, engines)
+
+      let engineName = selectedEngines[index];
+      let compareId = this.compareIds[row][engineName];
+
+      axios.get(this.getServerUrl + '/api?info=1&id=' + compareId).then(response => {
+        console.log(response);
+      })
     },
     showDiff(row) {
       let queries = this.compareIds[this.getSelectedRow(this.tests)][this.getSelectedRow(this.memory)];
@@ -276,18 +275,26 @@ export default {
         let row = [data[dataKey]['query']];
         for (let engine in selectedEngines) {
 
+
           let checkSum = this.checksums[i];
           if (checkSum === undefined) {
             checkSum = {};
           }
 
           let checksumValue = -1;
+          let compareId = null;
           if (data[dataKey][selectedEngines[engine]] !== undefined) {
             checksumValue = data[dataKey][selectedEngines[engine]]['checksum'];
+            compareId = data[dataKey][selectedEngines[engine]]['id'];
           }
 
           checkSum[selectedEngines[engine]] = checksumValue;
           this.checksums[i] = checkSum;
+
+          if (this.compareIds[i] === undefined) {
+            this.compareIds[i] = {};
+          }
+          this.compareIds[i][selectedEngines[engine]] = compareId;
 
           for (let cache in selectedCache) {
             let value;

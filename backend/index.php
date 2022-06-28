@@ -32,7 +32,7 @@ class DataGetter
         try {
             $encodedResult = json_encode($result);
         } catch (Exception $e) {
-            $code          = 500;
+            $code = 500;
             $encodedResult = '{"status":"'.self::STATUS_ERROR.'", "message":"Error while json encoding"}';
         }
 
@@ -49,7 +49,7 @@ class DataGetter
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_POSTFIELDS, 'query='.urlencode($query));
 
-        $result   = curl_exec($curl);
+        $result = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
 
@@ -68,12 +68,54 @@ class DataGetter
         return $result;
     }
 
-    public function getRow($firstId, $secondId)
+    public function getRow($id)
+    {
+        $query = "SELECT * FROM results WHERE id = ".(int) $id;
+
+        $result = $this->request($query);
+        $t = json_decode($result, true);
+        $this->printResponse($result);
+    }
+
+    private function parseSingleInfo(array $row)
+    {
+        if (!isset($row['hits'][0]['_source'])) {
+            $this->printResponse('Can\t parse results for requested row', self::STATUS_ERROR, 404);
+        }
+
+        $row = $row['hits'][0]['_source'];
+
+        return [
+            'query' => [
+                'original_query' => $row['original_query'],
+                'modified_query' => $row['modified_query']
+            ],
+            'performance' => [
+                'cold' => $row['cold'],
+                'fastest' => $row['fastest'],
+                'slowest' => $row['slowest'],
+                'warmup_time' => $row['warmup_time'],
+                'avg' => $row['avg'],
+                'cv' => $row['cv'],
+
+                'avg_fastest' => $row['avg_fastest'],
+
+                'cv_avg_fastest' => $row['cv_avg_fastest'],
+                'times_count' => count($row['times'])
+            ],
+            'response' => $row['result'],
+            'limits' => [
+                'memory' => $row['memory']
+            ]
+        ];
+    }
+
+    public function getRows($firstId, $secondId)
     {
         $query = "SELECT * FROM results WHERE id in (".(int) $firstId.",".(int) $secondId.")";
 
         $result = $this->request($query);
-        $t      = json_decode($result);
+        $t = json_decode($result);
         $this->printResponse($result);
     }
 
@@ -96,7 +138,7 @@ class DataGetter
         $result = $this->request($query);
 
         $result = $this->perpareResponse($result);
-        if ( ! $result) {
+        if (!$result) {
             $this->printResponse("Error while preparing data", self::STATUS_ERROR);
         }
 
@@ -108,23 +150,22 @@ class DataGetter
     private function perpareResponse($result)
     {
         $result = json_decode($result, true);
-        if ( ! json_last_error()) {
+        if (!json_last_error()) {
             $data = [];
 
             $engines = [];
-            $tests   = [];
-            $memory  = [];
-            $compare = [];
+            $tests = [];
+            $memory = [];
 
-            $testsInfo       = [];
-            $fullServerInfo  = [];
+            $testsInfo = [];
+            $fullServerInfo = [];
             $shortServerInfo = [];
             foreach ($result['hits']['hits'] as $row) {
-                $id                       = $row['_id'];
-                $row                      = $row['_source'];
+                $id = $row['_id'];
+                $row = $row['_source'];
                 $tests[$row['test_name']] = 0;
-                $memory[$row['memory']]   = 0;
-                $engine                   = $row['engine_name'].($row['type'] ? '_'.$row['type'] : '');
+                $memory[$row['memory']] = 0;
+                $engine = $row['engine_name'].($row['type'] ? '_'.$row['type'] : '');
                 //$engine = $row['engine_name'].'_'.$row['m'].($row['type']?'_'.$row['type']:'');
                 $engines[$engine] = 0;
 
@@ -149,19 +190,20 @@ class DataGetter
                     }
                 }
 
-                $compare[$row['test_name']][$row['memory']][md5($row['original_query'])][$engine] = $id;
-                $data[$row['test_name']][$row['memory']][md5($row['original_query'])]['query']    = $row['original_query'];
-                $data[$row['test_name']][$row['memory']][md5($row['original_query'])][$engine]    = [
-                    'slowest'  => $row['avg(slowest)'],
-                    'fastest'  => $row['avg(fastest)'],
+
+                $data[$row['test_name']][$row['memory']][md5($row['original_query'])]['query'] = $row['original_query'];
+                $data[$row['test_name']][$row['memory']][md5($row['original_query'])][$engine] = [
+                    'slowest' => $row['avg(slowest)'],
+                    'fastest' => $row['avg(fastest)'],
                     'fast_avg' => $row['avg(avg_fastest)'],
                     'checksum' => $row['min(checksum)'],
+                    'id' => $id
                 ];
 
                 $testsInfo[$row['test_name']] = $row['test_info'];
 
-                if ( ! isset($fullServerInfo[$row['test_name']])) {
-                    $fullServerInfo[$row['test_name']]  = $row['server_info'];
+                if (!isset($fullServerInfo[$row['test_name']])) {
+                    $fullServerInfo[$row['test_name']] = $row['server_info'];
                     $shortServerInfo[$row['test_name']] = $this->parseShortServerInfo($row['server_info']);
                 }
             }
@@ -169,7 +211,7 @@ class DataGetter
             krsort($engines, SORT_STRING);
 
             for ($i = 1; $i <= 30; $i++) {
-                $sorted   = [];
+                $sorted = [];
                 $selected = [];
                 foreach (['engines', 'tests', 'memory'] as $item) {
                     if ($item === 'memory') {
@@ -216,14 +258,13 @@ class DataGetter
 
 
             $data = [
-                'data'            => $data,
-                'tests'           => $sorted['tests'],
-                'engines'         => $sorted['engines'],
-                'memory'          => $sorted['memory'],
-                'testsInfo'       => $testsInfo,
+                'data' => $data,
+                'tests' => $sorted['tests'],
+                'engines' => $sorted['engines'],
+                'memory' => $sorted['memory'],
+                'testsInfo' => $testsInfo,
                 'shortServerInfo' => $shortServerInfo,
-                'fullServerInfo'  => $fullServerInfo,
-                'compare'         => $compare,
+                'fullServerInfo' => $fullServerInfo,
             ];
 
             return $data;
@@ -272,11 +313,11 @@ class DataGetter
             }
 
             $shortServerInfo = [];
-            if ( ! empty($cpuName)) {
+            if (!empty($cpuName)) {
                 $shortServerInfo[] = $cpuName;
             }
 
-            if ( ! empty($threads)) {
+            if (!empty($threads)) {
                 $shortServerInfo[] = $threads." threads in total";
             }
 
@@ -291,6 +332,8 @@ class DataGetter
 $dg = new DataGetter();
 if (isset($_GET['compare']) && isset($_GET['id1']) && isset($_GET['id2'])) {
     $dg->getRow($_GET['id1'], $_GET['id2']);
+} elseif ($_GET['info'] && isset($_GET['id'])) {
+    $dg->getRow($_GET['id']);
 } else {
     $dg->query();
 }
