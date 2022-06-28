@@ -104,7 +104,7 @@
 
         />
       </div>
-
+      <QueryInfo v-bind:tabsContent="parsedQueryInfo"></QueryInfo>
       <footer class="my-5 pt-5 text-muted text-center text-small">
       </footer>
     </div>
@@ -117,10 +117,13 @@ import Table from "@/components/Table";
 import EngineGroup from "@/components/EngineGroup";
 import ButtonGroup from "@/components/ButtonGroup";
 import TestInfo from "@/components/TestInfo";
+import QueryInfo from "@/components/QueryInfo";
+import JQuery from 'jquery'
 
 export default {
   name: 'App',
   components: {
+    QueryInfo,
     TestInfo,
     ButtonGroup,
     EngineGroup,
@@ -142,6 +145,8 @@ export default {
       supportedEngines: {},
       resultsCount: 0,
       selectedTest: 0,
+      queryInfo: {},
+      parsedQueryInfo: {},
       compareIds: [],
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
     }
@@ -160,6 +165,26 @@ export default {
       this.applySelection(false);
     });
   },
+  watch: {
+    queryInfo: function () {
+      this.parsedQueryInfo = {};
+      for (let tab in this.queryInfo) {
+        if (this.queryInfo[tab] instanceof Object) {
+          let text = '<ul>';
+
+          for (let row in this.queryInfo[tab]) {
+            text += '<li><strong>' + row + ':</strong> ' + this.queryInfo[tab][row] + '</li>'
+          }
+
+          text += '</ul>';
+          this.parsedQueryInfo[tab] = text;
+        }else {
+          this.parsedQueryInfo[tab] = this.queryInfo[tab];
+        }
+      }
+      JQuery('#modal-query-info').modal('show');
+    }
+  },
   methods: {
     showInfo(row, id) {
 
@@ -171,7 +196,7 @@ export default {
       let compareId = this.compareIds[row][engineName];
 
       axios.get(this.getServerUrl + '/api?info=1&id=' + compareId).then(response => {
-        console.log(response);
+        this.queryInfo = response.data.result;
       })
     },
     showDiff(row) {

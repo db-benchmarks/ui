@@ -9,9 +9,9 @@
   <div class="test-info">
     <p v-html="getTestInfo"></p>
     <p><b>Server:</b> {{ shortServerInfo }}</p>
-    <ModalLargeScroll>
+    <ModalLargeScroll v-bind:modal-id="'modal-test-info'">
       <template v-slot:trigger>
-        <a class="links" data-toggle="modal" data-target="#modal-long">Show more</a>
+        <a class="links" data-toggle="modal" data-target="#modal-test-info">Show more</a>
       </template>
       <template v-slot:header>
         Information about the hardware the test was run on and load/resources on the server before the test.
