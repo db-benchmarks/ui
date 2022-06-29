@@ -4,7 +4,7 @@
       <a class="links" data-toggle="modal" data-target="#modal-query-diff">Show more</a>
     </template>
     <template v-slot:header>
-      Information about query difference
+      Difference in query results
     </template>
     <template v-slot:content>
       <div v-for="(diff, name) in diff" :key="name">
