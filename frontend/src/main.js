@@ -12,10 +12,6 @@ import VueLogger from 'vuejs-logger';
 import VTooltip from 'v-tooltip';
 import VueGtag from "vue-gtag";
 import 'bootstrap'
-import { library } from '@fortawesome/fontawesome-svg-core';
-import { faCircleInfo, faArrowDownUpAcrossLine } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-library.add(faCircleInfo, faArrowDownUpAcrossLine)
 
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -31,7 +27,6 @@ const options = {
 };
 
 Vue.config.productionTip = false
-Vue.component('font-awesome-icon', FontAwesomeIcon);
 Vue.use(VueLogger, options);
 Vue.use(VTooltip);
 

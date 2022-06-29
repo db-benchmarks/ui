@@ -108,37 +108,25 @@ class DataGetter
         $rowFirstFileName  = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.$rowFirst['engine'];
         $rowSecondFileName = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.$rowSecond['engine'];
         unset($rowFirst['engine'], $rowSecond['engine']);
-        $keys = array_keys($rowFirst);
 
         $compare = [];
-        foreach ($keys as $key) {
-            if (is_array($rowFirst[$key])) {
-                $rowFirst[$key] = $this->formatArrayToText($rowFirst[$key]);
+
+
+        file_put_contents($rowFirstFileName, $rowFirst['Response']."\n");
+        file_put_contents($rowSecondFileName, $rowSecond['Response']."\n");
+
+
+        $command = 'diff -U 1000000 -u '.$rowFirstFileName.' '.$rowSecondFileName;
+        $output  = [];
+        exec($command, $output, $exitCode);
+        if ($exitCode <= 1) {
+            if ($output !== []) {
+                $compare['Response'] = implode("\n", str_replace(DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR, "", $output));
             }
-
-            if (is_array($rowSecond[$key])) {
-                $rowSecond[$key] = $this->formatArrayToText($rowSecond[$key]);
-            }
-
-            file_put_contents($rowFirstFileName, $rowFirst[$key]."\n");
-            file_put_contents($rowSecondFileName, $rowSecond[$key]."\n");
-
-
-            $command = 'diff -U 1000000 -u '.$rowFirstFileName.' '.$rowSecondFileName;
-            $output  = [];
-            exec($command, $output, $exitCode);
-            if ($exitCode <= 1) {
-                if ($output !== []) {
-                    $compare[$key] = implode("\n", $output);
-                } else {
-                    $compare[$key]
-                        = "diff --git $rowFirstFileName $rowFirstFileName\n--- $rowFirstFileName\n+++ $rowSecondFileName\nNo diff\n"
-                        .$rowFirst[$key]."+".$rowFirst[$key];
-                }
-            } else {
-                $this->printResponse(['message' => 'Error during diff generation'], self::STATUS_ERROR, 400);
-            }
+        } else {
+            $this->printResponse(['message' => 'Error during diff generation'], self::STATUS_ERROR, 400);
         }
+
 
         return $compare;
     }
@@ -161,17 +149,17 @@ class DataGetter
                 'modified_query' => $row['modified_query'],
             ],
             'Performance' => [
-                'Cold run time'        => $row['cold'],
-                'Fastest time'     => $row['fastest'],
-                'Slowest time'     => $row['slowest'],
-                'DB warmup time' => $row['warmup_time'],
-                'Average time (all attempts)'         => $row['avg'],
-                'CV (all attempts)'          => $row['cv'],
+                'Cold run time'               => number_format($row['cold'])." ms",
+                'Fastest time'                => number_format($row['fastest'])." ms",
+                'Slowest time'                => number_format($row['slowest']),
+                'DB warmup time'              => number_format($row['warmup_time'])." ms",
+                'Average time (all attempts)' => number_format($row['avg'])." ms",
+                'CV (all attempts)'           => $row['cv']." %",
 
-                'Avg(80% fastest)' => $row['avg_fastest'],
+                'Avg (80% fastest)' => number_format($row['avg_fastest'])." ms",
 
-                'CV of avg(80% fastest)' => $row['cv_avg_fastest'],
-                'Times count'    => count($row['times']),
+                'CV of avg (80% fastest)' => $row['cv_avg_fastest']." %",
+                'Times count'             => count($row['times']),
             ],
             'Response'    => $row['result'],
             'Limits'      => [

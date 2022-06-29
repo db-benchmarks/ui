@@ -64,40 +64,59 @@
           <td
               v-bind:style="{ 'background-color': getBackgroundColor(row, id), 'color':getTextColor(row, id) }"
               v-for="(key, id) in index" :key="key[index]">
+            <div class="d-flex">
+              <template v-if="currentRelation=getRelation(row, id)">
+                <template v-if="currentRelation!=1.00">
+                  <span class="table-value flex-grow-1">x{{ currentRelation }}</span> <span
+                    class="table-relation flex-grow-1">({{
+                    key
+                  }} ms)</span>
+                </template>
+                <template v-else>
+                  <span class="flex-grow-1">{{ key }} ms</span>
+                </template>
+                <template v-if="checkCheckSum(row, id)">
+                  &nbsp;<InfoIcon v-bind:row="row"
+                                  v-bind:id="id"
+                                  v-bind:hasDiff="true"
+                                  v-on:showInfo="emitShowInfo"
+                                  v-bind:class="checksumRelations[row][id]"
+                                  v-bind:stroke-color="getTextColor(row, id)">
+                </InfoIcon>
+                </template>
+                <template v-else>
+                  <QuestionIcon v-bind:row="row"
+                            v-bind:id="id"
+                            v-bind:hasDiff="false"
+                            v-on:showInfo="emitShowInfo"
+                            v-bind:class="checksumRelations[row][id]"
+                            v-bind:stroke-color="getTextColor(row, id)">
+                  </QuestionIcon>
+                </template>
 
-            <template v-if="currentRelation=getRelation(row, id)">
-              <template v-if="currentRelation!=1.00">
-                <span class="table-value">x{{ currentRelation }}</span> <span class="table-relation">({{
-                  key
-                }} ms)</span>
+
               </template>
               <template v-else>
-                <span>{{ key }} ms</span>
-              </template>
-              &nbsp;<InfoIcon v-bind:row="row"
-                        v-bind:id="id"
-                        v-bind:hasDiff="checkCheckSum(row, id)"
-                        v-on:showInfo="emitShowInfo"
-                        v-bind:class="checksumRelations[row][id]"
-                        v-bind:stroke-color="getTextColor(row, id)">
-              </InfoIcon>
-            </template>
-            <template v-else>
-              <template v-if="id===0">
+                <template v-if="id===0">
+                  <span class="flex-grow-1">
+                    <QuerySelector
+                        v-bind:query="key"
+                        v-bind:checked.sync="checkedQueries[row]"
+                    />
+                  </span>
+                  <span>
+                    <DiffIcon v-if="engines.length === 2 && checkedQueries[row] && checkCheckSum(row, id+1)"
+                              v-bind:row="row"
+                              v-on:showDiff="emitShowDiff">
+                    </DiffIcon>
+                </span>
 
-                <QuerySelector
-                    v-bind:query="key"
-                    v-bind:checked.sync="checkedQueries[row]"
-                />
-                <DiffIcon v-if="engines.length === 2 && checkedQueries[row] && checkCheckSum(row, id+1)"
-                          v-bind:row="row"
-                v-on:showDiff="emitShowDiff">
-                </DiffIcon>
+                </template>
+                <template v-else>
+                  {{ key }}
+                </template>
               </template>
-              <template v-else>
-                {{ key }}
-              </template>
-            </template>
+            </div>
           </td>
         </tr>
 
@@ -135,9 +154,10 @@ import Bar from "@/components/Bar";
 import QuerySelector from "@/components/QuerySelector";
 import DiffIcon from "@/components/DiffIcon";
 import InfoIcon from "@/components/InfoIcon";
+import QuestionIcon from "@/components/QuestionIcon";
 
 export default {
-  components: {QuerySelector, Bar, DiffIcon, InfoIcon},
+  components: {QuerySelector, Bar, DiffIcon, InfoIcon, QuestionIcon},
   props: {
     results: {
       type: Array,
@@ -164,7 +184,7 @@ export default {
     return {
       relations: [],
       circleColorIndex: 0,
-      circleColors: ['orange', 'yellow', 'red', 'blue', 'green', 'purple', 'brown', 'black', 'white'],
+      circleColors: ['orange', 'yellow', 'red', 'blue', 'green', 'purple', 'brown'],
       checksumRelations: {},
       colorsHelper: [],
       rowSum: {eachRow: {}, relative: {}, grouped: {}, geomean: {}},
@@ -195,10 +215,10 @@ export default {
     },
   },
   methods: {
-    emitShowInfo(row, id){
+    emitShowInfo(row, id) {
       this.$emit('showInfo', row, id);
     },
-    emitShowDiff(row){
+    emitShowDiff(row) {
       this.$emit('showDiff', row);
     },
     onlyUnique: function (value, index, self) {
@@ -628,6 +648,7 @@ export default {
 .table-value {
   font-weight: bold;
 }
+
 h5 {
   color: #227596;
   margin-left: 15px;
