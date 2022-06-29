@@ -4,7 +4,7 @@
       <a class="links" data-toggle="modal" data-target="#modal-query-info">Show more</a>
     </template>
     <template v-slot:header>
-      Information about query
+      Query execution info
     </template>
     <template v-slot:content>
       <Tabs v-bind:items="tabsContent"></Tabs>
