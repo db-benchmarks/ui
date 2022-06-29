@@ -161,12 +161,12 @@ class DataGetter
                 'modified_query' => $row['modified_query'],
             ],
             'performance' => [
-                'cold'        => $row['cold'],
-                'fastest'     => $row['fastest'],
-                'slowest'     => $row['slowest'],
-                'warmup_time' => $row['warmup_time'],
-                'avg'         => $row['avg'],
-                'cv'          => $row['cv'],
+                'Cold run time'        => $row['cold'],
+                'Fastest time'     => $row['fastest'],
+                'Slowest time'     => $row['slowest'],
+                'DB warmup time' => $row['warmup_time'],
+                'Average time (all attempts)'         => $row['avg'],
+                'CV (all attempts)'          => $row['cv'],
 
                 'avg_fastest' => $row['avg_fastest'],
 
