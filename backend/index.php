@@ -175,7 +175,7 @@ class DataGetter
             ],
             'response'    => $row['result'],
             'limits'      => [
-                'memory' => $row['memory'],
+                'RAM limit' => $row['memory'],
             ],
             'engine'      => $row['engine_name'].'_'.$row['type'],
         ];
