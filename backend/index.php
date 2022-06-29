@@ -168,10 +168,10 @@ class DataGetter
                 'Average time (all attempts)'         => $row['avg'],
                 'CV (all attempts)'          => $row['cv'],
 
-                'avg_fastest' => $row['avg_fastest'],
+                'Avg(80% fastest)' => $row['avg_fastest'],
 
-                'cv_avg_fastest' => $row['cv_avg_fastest'],
-                'times_count'    => count($row['times']),
+                'CV of avg(80% fastest)' => $row['cv_avg_fastest'],
+                'Times count'    => count($row['times']),
             ],
             'response'    => $row['result'],
             'limits'      => [
