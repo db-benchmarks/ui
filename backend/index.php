@@ -156,11 +156,11 @@ class DataGetter
     private function parseSingleInfo(array $row)
     {
         return [
-            'query'       => [
+            'Query'       => [
                 'original_query' => $row['original_query'],
                 'modified_query' => $row['modified_query'],
             ],
-            'performance' => [
+            'Performance' => [
                 'Cold run time'        => $row['cold'],
                 'Fastest time'     => $row['fastest'],
                 'Slowest time'     => $row['slowest'],
@@ -173,8 +173,8 @@ class DataGetter
                 'CV of avg(80% fastest)' => $row['cv_avg_fastest'],
                 'Times count'    => count($row['times']),
             ],
-            'response'    => $row['result'],
-            'limits'      => [
+            'Response'    => $row['result'],
+            'Limits'      => [
                 'RAM limit' => $row['memory'],
             ],
             'engine'      => $row['engine_name'].'_'.$row['type'],
