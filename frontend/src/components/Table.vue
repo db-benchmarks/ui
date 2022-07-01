@@ -64,13 +64,10 @@
           <td
               v-bind:style="{ 'background-color': getBackgroundColor(row, id), 'color':getTextColor(row, id) }"
               v-for="(key, id) in index" :key="key[index]">
-            <div class="d-flex">
+            <div class="d-flex align-items-center">
               <template v-if="currentRelation=getRelation(row, id)">
                 <template v-if="currentRelation!=1.00">
-                  <span class="table-value flex-grow-1">x{{ currentRelation }}</span> <span
-                    class="table-relation flex-grow-1">({{
-                    key
-                  }} ms)</span>
+                  <span class="table-value flex-grow-1">x{{ currentRelation }}<span class="table-relation">&nbsp;({{ key }} ms)</span></span>
                 </template>
                 <template v-else>
                   <span class="flex-grow-1">{{ key }} ms</span>
@@ -86,11 +83,11 @@
                 </template>
                 <template v-else>
                   <QuestionIcon v-bind:row="row"
-                            v-bind:id="id"
-                            v-bind:hasDiff="false"
-                            v-on:showInfo="emitShowInfo"
-                            v-bind:class="checksumRelations[row][id]"
-                            v-bind:stroke-color="getTextColor(row, id)">
+                                v-bind:id="id"
+                                v-bind:hasDiff="false"
+                                v-on:showInfo="emitShowInfo"
+                                v-bind:class="checksumRelations[row][id]"
+                                v-bind:stroke-color="getTextColor(row, id)">
                   </QuestionIcon>
                 </template>
 
@@ -654,5 +651,8 @@ h5 {
   margin-left: 15px;
   margin-top: 35px !important;
   font-weight: bold !important;
+}
+.table-relation{
+  font-weight: normal;
 }
 </style>

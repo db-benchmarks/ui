@@ -1,8 +1,5 @@
 <template>
   <ModalLargeScroll modal-id="modal-query-info">
-    <template v-slot:trigger>
-      <a class="links" data-toggle="modal" data-target="#modal-query-info">Show more</a>
-    </template>
     <template v-slot:header>
       Query execution info
     </template>

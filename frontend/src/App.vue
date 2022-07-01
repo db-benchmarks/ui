@@ -278,6 +278,7 @@ export default {
     },
     applySelection(clearQueries = false, unsetUnsupported = false) {
       this.checksums = {};
+      this.compareIds = [];
       let data = this.results[this.getSelectedRow(this.tests)[0]][this.getSelectedRow(this.memory)[0]];
       this.fillSupportedEngines(data);
       if (unsetUnsupported) {

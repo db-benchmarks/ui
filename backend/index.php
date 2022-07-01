@@ -284,7 +284,9 @@ class DataGetter
                 // Need to select available engine in this test
 
                 if (isset($data[$selected['tests']][$selected['memory']])) {
-                    $firstTestQuery = array_shift($data[$selected['tests']][$selected['memory']]);
+
+
+                    $firstTestQuery = $data[$selected['tests']][$selected['memory']][key($data[$selected['tests']][$selected['memory']] )];
 
                     if (isset($firstTestQuery[$selected['engines'][0]]) && isset($firstTestQuery[$selected['engines'][1]])) {
                         foreach (['engines', 'tests', 'memory'] as $item) {

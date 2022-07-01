@@ -1,6 +1,7 @@
 <template>
   <svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-       v-bind:class="classObject" viewBox="0 0 473.733 473.733" style="enable-background:new 0 0 473.733 473.733;" xml:space="preserve">
+       v-bind:class="classObject" v-on:click="showInfo"
+       viewBox="0 0 473.733 473.733" style="enable-background:new 0 0 473.733 473.733;" xml:space="preserve">
 <g>
   <path fill="currentColor" d="M231.2,336.033c-9.35,0-17,7.65-17,17v11.333c0,9.35,7.65,17,17,17s17-7.65,17-17v-11.333
 			C248.2,343.683,240.55,336.033,231.2,336.033z"/>

@@ -1,8 +1,5 @@
 <template>
   <ModalLargeScroll modal-id="modal-query-diff">
-    <template v-slot:trigger>
-      <a class="links" data-toggle="modal" data-target="#modal-query-diff">Show more</a>
-    </template>
     <template v-slot:header>
       Difference in query results
     </template>
