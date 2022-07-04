@@ -32,7 +32,7 @@ class DataGetter
         try {
             $encodedResult = json_encode($result);
         } catch (Exception $e) {
-            $code          = 500;
+            $code = 500;
             $encodedResult = '{"status":"'.self::STATUS_ERROR.'", "message":"Error while json encoding"}';
         }
 
@@ -49,7 +49,7 @@ class DataGetter
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_POSTFIELDS, 'query='.urlencode($query));
 
-        $result   = curl_exec($curl);
+        $result = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
 
@@ -68,13 +68,13 @@ class DataGetter
         return $result;
     }
 
-    public function getRow($id)
+    public function getRow(int $id)
     {
-        $query = "SELECT * FROM results WHERE id = ".(int) $id;
+        $query = "SELECT * FROM results WHERE id = ".$id;
 
         $decodedResult = json_decode($this->request($query), true);
         if ($decodedResult) {
-            if ( ! isset($decodedResult['hits']['hits'][0]['_source'])) {
+            if (!isset($decodedResult['hits']['hits'][0]['_source'])) {
                 $this->printResponse('Can\t parse results for requested row', self::STATUS_ERROR, 404);
             }
 
@@ -86,9 +86,9 @@ class DataGetter
         $this->printResponse(['message' => 'Requested row not found'], self::STATUS_ERROR, 404);
     }
 
-    public function getDiff($firstId, $secondId)
+    public function getDiff(int $firstId, int $secondId)
     {
-        $query = "SELECT * FROM results WHERE id in (".(int) $firstId.",".(int) $secondId.")";
+        $query = "SELECT * FROM results WHERE id in (".$firstId.",".$secondId.")";
 
         $decodedResult = json_decode($this->request($query), true);
         if ($decodedResult && count($decodedResult['hits']['hits']) === 2) {
@@ -103,9 +103,25 @@ class DataGetter
         $this->printResponse(['message' => 'Requested rows not found'], self::STATUS_ERROR, 404);
     }
 
+    public function getDatasetInfo(int $id)
+    {
+        $query = "SELECT * FROM results WHERE id = ".$id;
+
+        $decodedResult = json_decode($this->request($query), true);
+        if ($decodedResult) {
+            if (!isset($decodedResult['hits']['hits'][0]['_source'])) {
+                $this->printResponse('Can\t parse results for requested row', self::STATUS_ERROR, 404);
+            }
+
+            $this->printResponse($decodedResult['hits']['hits'][0]['_source']['info']);
+        }
+
+        $this->printResponse(['message' => 'Requested row not found'], self::STATUS_ERROR, 404);
+    }
+
     private function getSystemDiff($rowFirst, $rowSecond)
     {
-        $rowFirstFileName  = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.$rowFirst['engine'];
+        $rowFirstFileName = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.$rowFirst['engine'];
         $rowSecondFileName = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.$rowSecond['engine'];
         unset($rowFirst['engine'], $rowSecond['engine']);
 
@@ -117,11 +133,12 @@ class DataGetter
 
 
         $command = 'diff -U 1000000 -u '.$rowFirstFileName.' '.$rowSecondFileName;
-        $output  = [];
+        $output = [];
         exec($command, $output, $exitCode);
         if ($exitCode <= 1) {
             if ($output !== []) {
-                $compare['Response'] = implode("\n", str_replace(DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR, "", $output));
+                $compare['Response'] = implode("\n",
+                    str_replace(DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR, "", $output));
             }
         } else {
             $this->printResponse(['message' => 'Error during diff generation'], self::STATUS_ERROR, 400);
@@ -144,7 +161,7 @@ class DataGetter
     private function parseSingleInfo(array $row)
     {
         return [
-            'Query'       => [
+            'Query' => [
                 'Original query' => $row['original_query'],
                 'Adapted query' => ' '.$row['modified_query'],
             ],
@@ -159,13 +176,13 @@ class DataGetter
                 'Avg (80% fastest)' => number_format($row['avg_fastest'])." μs",
 
                 'CV of avg (80% fastest)' => $row['cv_avg_fastest']." %",
-                'Query runs'             => count($row['times']),
+                'Query runs' => count($row['times']),
             ],
-            'Response'    => $row['result'],
-            'Limits'      => [
+            'Response' => $row['result'],
+            'Limits' => [
                 'RAM limit' => $row['memory'],
             ],
-            'engine'      => $row['engine_name'].'_'.$row['type'],
+            'engine' => $row['engine_name'].'_'.$row['type'],
         ];
     }
 
@@ -188,7 +205,7 @@ class DataGetter
         $result = $this->request($query);
 
         $result = $this->perpareResponse($result);
-        if ( ! $result) {
+        if (!$result) {
             $this->printResponse("Error while preparing data", self::STATUS_ERROR);
         }
 
@@ -200,22 +217,22 @@ class DataGetter
     private function perpareResponse($result)
     {
         $result = json_decode($result, true);
-        if ( ! json_last_error()) {
+        if (!json_last_error()) {
             $data = [];
 
             $engines = [];
-            $tests   = [];
-            $memory  = [];
+            $tests = [];
+            $memory = [];
 
-            $testsInfo       = [];
-            $fullServerInfo  = [];
+            $testsInfo = [];
+            $fullServerInfo = [];
             $shortServerInfo = [];
             foreach ($result['hits']['hits'] as $row) {
-                $id                       = $row['_id'];
-                $row                      = $row['_source'];
+                $id = $row['_id'];
+                $row = $row['_source'];
                 $tests[$row['test_name']] = 0;
-                $memory[$row['memory']]   = 0;
-                $engine                   = $row['engine_name'].($row['type'] ? '_'.$row['type'] : '');
+                $memory[$row['memory']] = 0;
+                $engine = $row['engine_name'].($row['type'] ? '_'.$row['type'] : '');
                 //$engine = $row['engine_name'].'_'.$row['m'].($row['type']?'_'.$row['type']:'');
                 $engines[$engine] = 0;
 
@@ -243,17 +260,17 @@ class DataGetter
 
                 $data[$row['test_name']][$row['memory']][md5($row['original_query'])]['query'] = $row['original_query'];
                 $data[$row['test_name']][$row['memory']][md5($row['original_query'])][$engine] = [
-                    'slowest'  => $row['avg(slowest)'],
-                    'fastest'  => $row['avg(fastest)'],
+                    'slowest' => $row['avg(slowest)'],
+                    'fastest' => $row['avg(fastest)'],
                     'fast_avg' => $row['avg(avg_fastest)'],
                     'checksum' => $row['min(checksum)'],
-                    'id'       => $id,
+                    'id' => $id,
                 ];
 
                 $testsInfo[$row['test_name']] = $row['test_info'];
 
-                if ( ! isset($fullServerInfo[$row['test_name']])) {
-                    $fullServerInfo[$row['test_name']]  = $row['server_info'];
+                if (!isset($fullServerInfo[$row['test_name']])) {
+                    $fullServerInfo[$row['test_name']] = $row['server_info'];
                     $shortServerInfo[$row['test_name']] = $this->parseShortServerInfo($row['server_info']);
                 }
             }
@@ -261,7 +278,7 @@ class DataGetter
             ksort($engines, SORT_STRING);
 
             for ($i = 1; $i <= 30; $i++) {
-                $sorted   = [];
+                $sorted = [];
                 $selected = [];
                 foreach (['engines', 'tests', 'memory'] as $item) {
                     if ($item === 'memory') {
@@ -286,7 +303,7 @@ class DataGetter
                 if (isset($data[$selected['tests']][$selected['memory']])) {
 
 
-                    $firstTestQuery = $data[$selected['tests']][$selected['memory']][key($data[$selected['tests']][$selected['memory']] )];
+                    $firstTestQuery = $data[$selected['tests']][$selected['memory']][key($data[$selected['tests']][$selected['memory']])];
 
                     if (isset($firstTestQuery[$selected['engines'][0]]) && isset($firstTestQuery[$selected['engines'][1]])) {
                         foreach (['engines', 'tests', 'memory'] as $item) {
@@ -310,13 +327,13 @@ class DataGetter
 
 
             $data = [
-                'data'            => $data,
-                'tests'           => $sorted['tests'],
-                'engines'         => $sorted['engines'],
-                'memory'          => $sorted['memory'],
-                'testsInfo'       => $testsInfo,
+                'data' => $data,
+                'tests' => $sorted['tests'],
+                'engines' => $sorted['engines'],
+                'memory' => $sorted['memory'],
+                'testsInfo' => $testsInfo,
                 'shortServerInfo' => $shortServerInfo,
-                'fullServerInfo'  => $fullServerInfo,
+                'fullServerInfo' => $fullServerInfo,
             ];
 
             return $data;
@@ -365,11 +382,11 @@ class DataGetter
             }
 
             $shortServerInfo = [];
-            if ( ! empty($cpuName)) {
+            if (!empty($cpuName)) {
                 $shortServerInfo[] = $cpuName;
             }
 
-            if ( ! empty($threads)) {
+            if (!empty($threads)) {
                 $shortServerInfo[] = $threads." threads in total";
             }
 
@@ -383,9 +400,11 @@ class DataGetter
 
 $dg = new DataGetter();
 if (isset($_GET['compare']) && isset($_GET['id1']) && isset($_GET['id2'])) {
-    $dg->getDiff($_GET['id1'], $_GET['id2']);
+    $dg->getDiff((int) $_GET['id1'], (int) $_GET['id2']);
+} elseif ($_GET['dataset_info'] && isset($_GET['id'])) {
+    $dg->getDatasetInfo((int) $_GET['id']);
 } elseif ($_GET['info'] && isset($_GET['id'])) {
-    $dg->getRow($_GET['id']);
+    $dg->getRow((int) $_GET['id']);
 } else {
     $dg->query();
 }
