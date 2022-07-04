@@ -258,7 +258,7 @@ class DataGetter
                 }
             }
 
-            krsort($engines, SORT_STRING);
+            ksort($engines, SORT_STRING);
 
             for ($i = 1; $i <= 30; $i++) {
                 $sorted   = [];
