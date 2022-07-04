@@ -4,6 +4,7 @@
        v-bind:class="classObject"
        width="438.533px" height="438.533px" viewBox="0 0 438.533 438.533"
        style="enable-background:new 0 0 438.533 438.533;"
+       v-tooltip="'This query\'s result is different from the others of different colors. Leave two databases to inspect the difference further'"
        xml:space="preserve"><g><path fill="currentColor" d="M409.133,109.203c-19.608-33.592-46.205-60.189-79.798-79.796C295.736,9.801,259.058,0,219.273,0
 		c-39.781,0-76.47,9.801-110.063,29.407c-33.595,19.604-60.192,46.201-79.8,79.796C9.801,142.8,0,179.489,0,219.267
 		c0,39.78,9.804,76.463,29.407,110.062c19.607,33.592,46.204,60.189,79.799,79.798c33.597,19.605,70.283,29.407,110.063,29.407

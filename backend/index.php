@@ -145,13 +145,13 @@ class DataGetter
     {
         return [
             'Query'       => [
-                'original_query' => $row['original_query'],
-                'modified_query' => $row['modified_query'],
+                'Original query' => $row['original_query'],
+                'Adapted query' => ' '.$row['modified_query'],
             ],
             'Performance' => [
                 'Cold run time'               => number_format($row['cold'])." μs",
                 'Fastest time'                => number_format($row['fastest'])." μs",
-                'Slowest time'                => number_format($row['slowest'])." μs",
+                'Slowest time'                => number_format($row['slowest']),
                 'DB warmup time'              => number_format($row['warmup_time'])." μs",
                 'Average time (all attempts)' => number_format($row['avg'])." μs",
                 'CV (all attempts)'           => $row['cv']." %",
