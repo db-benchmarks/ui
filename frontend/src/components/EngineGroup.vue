@@ -12,7 +12,8 @@
         <div class="col-2 d-flex justify-content-center" :key="name"
              data-toggle="collapse" :data-target="'#collapse-'+name" role="button" aria-expanded="false"
              :aria-controls="'collapse-'+name">
-          <div :class="'d-flex engine-block justify-content-center'+ (isAnyActive(name) ? ' active-engine' : '')">
+          <div @click="checkChildIsSingle(name, value)"
+               :class="'d-flex engine-block justify-content-center'+ (isAnyActive(name) ? ' active-engine' : '')">
             <img :src="require(`@/assets/logos/${name}.svg`)">
             <span class="engine-badge">{{ getActiveItemsCount(value) }}</span>
           </div>
@@ -20,7 +21,6 @@
         </div>
       </template>
     </div>
-
 
     <template v-for="(value, name) in groups">
       <div :key="name" class="row mt-4 collapse multi-collapse" :id="'collapse-'+name"
@@ -62,6 +62,15 @@ export default {
   methods: {
     changed() {
       this.$emit('changed')
+    },
+    checkChildIsSingle(groupName, blockItems) {
+      let items = this.filterItems(groupName);
+      let itemKeys = Object.keys(items);
+
+      if (itemKeys.length === 1) {
+        items[itemKeys[0]][Object.keys(blockItems)[0]] = !items[itemKeys[0]][Object.keys(blockItems)[0]]
+        this.$emit('changed')
+      }
     },
     filterItems(groupName) {
       const asArray = Object.entries(this.items);
