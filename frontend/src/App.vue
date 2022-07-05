@@ -29,7 +29,8 @@
     <div class="container">
       <div class="row">
         <div class="col-12 text-left">
-          <h1 align="center" style="padding-top: 10px;"><a href="https://github.com/db-benchmarks/db-benchmarks">⭐Star us on GitHub⭐</a></h1>
+          <h1 align="center" style="padding-top: 10px;"><a href="https://github.com/db-benchmarks/db-benchmarks">⭐Star
+            us on GitHub⭐</a></h1>
         </div>
       </div>
       <div class="row">
@@ -93,14 +94,18 @@
 
       <div class="row">
         <Table v-bind:engines="getSelectedRow(this.engines)"
-               v-bind:cache="prepareCacheForTable()"
+               v-bind:cache="prepareCacheForTable"
                v-bind:results="filteredResults"
                v-bind:check-sum="checksums"
                v-bind:checkedQueries.sync="queries"
                v-on:update:checked="modifyUrl()"
+               v-on:showDiff="showDiff"
+               v-on:showInfo="showInfo"
+
         />
       </div>
-
+      <QueryInfo v-bind:tabsContent="parsedQueryInfo"></QueryInfo>
+      <QueryDiff v-bind:diff="diff"></QueryDiff>
       <footer class="my-5 pt-5 text-muted text-center text-small">
       </footer>
     </div>
@@ -113,10 +118,15 @@ import Table from "@/components/Table";
 import EngineGroup from "@/components/EngineGroup";
 import ButtonGroup from "@/components/ButtonGroup";
 import TestInfo from "@/components/TestInfo";
+import QueryInfo from "@/components/QueryInfo";
+import JQuery from 'jquery'
+import QueryDiff from "@/components/QueryDiff";
 
 export default {
   name: 'App',
   components: {
+    QueryDiff,
+    QueryInfo,
     TestInfo,
     ButtonGroup,
     EngineGroup,
@@ -138,15 +148,15 @@ export default {
       supportedEngines: {},
       resultsCount: 0,
       selectedTest: 0,
+      queryInfo: {},
+      parsedQueryInfo: {},
+      compareIds: [],
+      diff: {},
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
     }
   },
   created() {
-    let serverUrl = process.env.VUE_APP_API_URL;
-    if (serverUrl === undefined) {
-      serverUrl = '';
-    }
-    axios.get(serverUrl + "/api").then(response => {
+    axios.get(this.getServerUrl + "/api").then(response => {
       this.results = response.data.result.data;
       this.tests = response.data.result.tests;
       this.engines = response.data.result.engines;
@@ -159,7 +169,48 @@ export default {
       this.applySelection(false);
     });
   },
+  watch: {
+    queryInfo: function () {
+      this.parsedQueryInfo = {};
+      for (let tab in this.queryInfo) {
+        if (this.queryInfo[tab] instanceof Object) {
+          let text = '<ul>';
+
+          for (let row in this.queryInfo[tab]) {
+            text += '<li><strong>' + row + ':</strong> ' + this.queryInfo[tab][row] + '</li>'
+          }
+
+          text += '</ul>';
+          this.parsedQueryInfo[tab] = text;
+        } else {
+          this.parsedQueryInfo[tab] = this.queryInfo[tab];
+        }
+      }
+      JQuery('#modal-query-info').modal('show');
+    }
+  },
   methods: {
+    showInfo(row, id) {
+
+      let selectedEngines = this.getSelectedRow(this.engines)
+      let grouppedCount = this.prepareCacheForTable.length / selectedEngines.length;
+      let index = Math.ceil(id / grouppedCount) - 1;
+
+      let engineName = selectedEngines[index];
+      let compareId = this.compareIds[row][engineName];
+
+      axios.get(this.getServerUrl + '/api?info=1&id=' + compareId).then(response => {
+        this.queryInfo = response.data.result;
+      })
+    },
+    showDiff(row) {
+      let ids = Object.values(this.compareIds[row]);
+      console.log(row, this.compareIds[row])
+      axios.get(this.getServerUrl + "/api?compare=1&id1=" + ids[0] + "&id2=" + ids[1]).then(response => {
+        this.diff = response.data.result;
+        JQuery('#modal-query-diff').modal('show');
+      })
+    },
     parseFullServerInfo(fullServerInfo) {
       let parsed = {}
       for (let testInfo in fullServerInfo) {
@@ -227,6 +278,7 @@ export default {
     },
     applySelection(clearQueries = false, unsetUnsupported = false) {
       this.checksums = {};
+      this.compareIds = [];
       let data = this.results[this.getSelectedRow(this.tests)[0]][this.getSelectedRow(this.memory)[0]];
       this.fillSupportedEngines(data);
       if (unsetUnsupported) {
@@ -243,18 +295,26 @@ export default {
         let row = [data[dataKey]['query']];
         for (let engine in selectedEngines) {
 
+
           let checkSum = this.checksums[i];
           if (checkSum === undefined) {
             checkSum = {};
           }
 
           let checksumValue = -1;
+          let compareId = null;
           if (data[dataKey][selectedEngines[engine]] !== undefined) {
             checksumValue = data[dataKey][selectedEngines[engine]]['checksum'];
+            compareId = data[dataKey][selectedEngines[engine]]['id'];
           }
 
           checkSum[selectedEngines[engine]] = checksumValue;
           this.checksums[i] = checkSum;
+
+          if (this.compareIds[i] === undefined) {
+            this.compareIds[i] = {};
+          }
+          this.compareIds[i][selectedEngines[engine]] = compareId;
 
           for (let cache in selectedCache) {
             let value;
@@ -356,13 +416,6 @@ export default {
         });
       }
     },
-    prepareCacheForTable() {
-      let result = [];
-      this.getSelectedRow(this.engines).forEach(() => {
-        result = this.getSelectedRow(this.cache).concat(result)
-      })
-      return result
-    },
     getSelectedRow(obj) {
       let result = [];
       for (let engine in obj) {
@@ -409,7 +462,21 @@ export default {
     getYear() {
       let today = new Date();
       return today.getFullYear();
-    }
+    },
+    getServerUrl() {
+      let serverUrl = process.env.VUE_APP_API_URL;
+      if (serverUrl === undefined) {
+        serverUrl = '';
+      }
+      return serverUrl;
+    },
+    prepareCacheForTable() {
+      let result = [];
+      this.getSelectedRow(this.engines).forEach(() => {
+        result = this.getSelectedRow(this.cache).concat(result)
+      })
+      return result
+    },
   }
 };
 String.prototype.capitalize = function () {

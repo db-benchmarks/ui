@@ -1,10 +1,10 @@
 /* Copyright (C) 2022 Manticore Software Ltd
- * You may use, distribute and modify this code under the
- * terms of the AGPLv3 license.
- *
- * You can find a copy of the AGPLv3 license here
- * https://www.gnu.org/licenses/agpl-3.0.txt
- */
+* You may use, distribute and modify this code under the
+* terms of the AGPLv3 license.
+*
+* You can find a copy of the AGPLv3 license here
+* https://www.gnu.org/licenses/agpl-3.0.txt
+*/
 <template>
   <div>
     <hr>
@@ -15,7 +15,10 @@
          v-bind:grouped-count="groupedCount"/>
     <div class="container mt-3">
       <small>
-        ❗Take into account that these final results are based on the below queries and can't be used as an <b>objective</b> metric for an advantage of one database over the others. It's provided for informational purposes only. To make it better fitting your workload it's recommended to uncheck the queries that you don't use.
+        ❗Take into account that these final results are based on the below queries and can't be used as an
+        <b>objective</b> metric for an advantage of one database over the others. It's provided for informational
+        purposes only. To make it better fitting your workload it's recommended to uncheck the queries that you don't
+        use.
       </small>
     </div>
     <hr>
@@ -61,34 +64,56 @@
           <td
               v-bind:style="{ 'background-color': getBackgroundColor(row, id), 'color':getTextColor(row, id) }"
               v-for="(key, id) in index" :key="key[index]">
+            <div class="d-flex align-items-center">
+              <template v-if="currentRelation=getRelation(row, id)">
+                <template v-if="currentRelation!=1.00">
+                  <span class="table-value flex-grow-1">x{{ currentRelation }}<span class="table-relation">&nbsp;({{ key }} ms)</span></span>
+                </template>
+                <template v-else>
+                  <span class="flex-grow-1">{{ key }} ms</span>
+                </template>
+                <template v-if="checkCheckSum(row, id)">
+                  &nbsp;<InfoIcon v-bind:row="row"
+                                  v-bind:id="id"
+                                  v-bind:hasDiff="true"
+                                  v-on:showInfo="emitShowInfo"
+                                  v-bind:class="checksumRelations[row][id]"
+                                  v-bind:stroke-color="getTextColor(row, id)">
+                </InfoIcon>
+                </template>
+                <template v-else>
+                  <QuestionIcon v-bind:row="row"
+                                v-bind:id="id"
+                                v-bind:hasDiff="false"
+                                v-on:showInfo="emitShowInfo"
+                                v-bind:class="checksumRelations[row][id]"
+                                v-bind:stroke-color="getTextColor(row, id)">
+                  </QuestionIcon>
+                </template>
 
-            <template v-if="currentRelation=getRelation(row, id)">
-              <template v-if="currentRelation!=1.00">
-                <span class="table-value">x{{ currentRelation }}</span> <span class="table-relation">({{
-                  key
-                }} ms)</span>
+
               </template>
               <template v-else>
-                <span>{{ key }} ms</span>
-              </template>
+                <template v-if="id===0">
+                  <span class="flex-grow-1">
+                    <QuerySelector
+                        v-bind:query="key"
+                        v-bind:checked.sync="checkedQueries[row]"
+                    />
+                  </span>
+                  <span>
+                    <DiffIcon v-if="engines.length === 2 && checkedQueries[row] && checkCheckSum(row, id+1)"
+                              v-bind:row="row"
+                              v-on:showDiff="emitShowDiff">
+                    </DiffIcon>
+                </span>
 
-            </template>
-            <template v-else>
-              <template v-if="id===0">
-
-                <QuerySelector
-                    v-bind:query="key"
-                    v-bind:checked.sync="checkedQueries[row]"
-                />
+                </template>
+                <template v-else>
+                  {{ key }}
+                </template>
               </template>
-              <template v-else>
-                {{ key }}
-              </template>
-            </template>
-            <template v-if="checkCheckSum(row, id)">
-              &nbsp;<HashCircle v-bind:cls="checksumRelations[row][id]" v-bind:stroke-color="getTextColor(row, id)"/>
-            </template>
-
+            </div>
           </td>
         </tr>
 
@@ -124,10 +149,12 @@
 <script>
 import Bar from "@/components/Bar";
 import QuerySelector from "@/components/QuerySelector";
-import HashCircle from "@/components/HashCircle";
+import DiffIcon from "@/components/DiffIcon";
+import InfoIcon from "@/components/InfoIcon";
+import QuestionIcon from "@/components/QuestionIcon";
 
 export default {
-  components: {HashCircle, QuerySelector, Bar},
+  components: {QuerySelector, Bar, DiffIcon, InfoIcon, QuestionIcon},
   props: {
     results: {
       type: Array,
@@ -154,7 +181,7 @@ export default {
     return {
       relations: [],
       circleColorIndex: 0,
-      circleColors: ['orange', 'yellow', 'red', 'blue', 'green', 'purple', 'brown', 'black', 'white'],
+      circleColors: ['orange', 'yellow', 'red', 'blue', 'green', 'purple', 'brown'],
       checksumRelations: {},
       colorsHelper: [],
       rowSum: {eachRow: {}, relative: {}, grouped: {}, geomean: {}},
@@ -185,11 +212,17 @@ export default {
     },
   },
   methods: {
+    emitShowInfo(row, id) {
+      this.$emit('showInfo', row, id);
+    },
+    emitShowDiff(row) {
+      this.$emit('showDiff', row);
+    },
     onlyUnique: function (value, index, self) {
       return self.indexOf(value) === index;
     },
 
-    clickAllQuery:function (event){
+    clickAllQuery: function (event) {
       for (let index in this.checkedQueries) {
         this.checkedQueries[index] = event.target.checked;
       }
@@ -618,5 +651,8 @@ h5 {
   margin-left: 15px;
   margin-top: 35px !important;
   font-weight: bold !important;
+}
+.table-relation{
+  font-weight: normal;
 }
 </style>
