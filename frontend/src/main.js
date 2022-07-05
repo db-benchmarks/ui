@@ -13,6 +13,7 @@ import VTooltip from 'v-tooltip';
 import VueGtag from "vue-gtag";
 import 'bootstrap'
 
+
 const isProduction = process.env.NODE_ENV === 'production';
 
 const options = {

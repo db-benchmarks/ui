@@ -3,9 +3,9 @@
     <!-- Button trigger modal -->
     <slot name="trigger"></slot>
     <!-- Modal -->
-    <div class="modal fade" id="modal-long" tabindex="-1" role="dialog" aria-labelledby="ModalLongTitle"
+    <div class="modal fade" :id="modalId" tabindex="-1" role="dialog" aria-labelledby="ModalLongTitle"
          aria-hidden="true">
-      <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
           <div class="modal-header">
             <slot name="header"></slot>
@@ -13,7 +13,9 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
-          <div class="modal-body"><slot name="content"></slot></div>
+          <div class="modal-body">
+            <slot name="content"></slot>
+          </div>
         </div>
       </div>
     </div>
@@ -22,7 +24,13 @@
 
 <script>
 export default {
-  name: "ModalLargeScroll"
+  name: "ModalLargeScroll",
+  props: {
+    modalId: {
+      required: true,
+      type: String
+    }
+  }
 }
 </script>
 

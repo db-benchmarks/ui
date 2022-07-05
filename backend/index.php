@@ -16,7 +16,7 @@ class DataGetter
     const STATUS_SUCCESS = "success";
     const STATUS_ERROR = "error";
 
-    private function printResponse($data, $status = self::STATUS_SUCCESS, $code = 200)
+    private function printResponse($data, string $status = self::STATUS_SUCCESS, int $code = 200)
     {
         $result = ['status' => $status];
         if ($status === self::STATUS_ERROR) {
@@ -42,25 +42,9 @@ class DataGetter
         die();
     }
 
-    public function query()
+    private function request($query)
     {
         $curl = curl_init();
-
-        $query
-            = "SELECT ".
-            "    test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), ".
-            "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error), ".
-            "    test_info, server_info ".
-            "FROM results ".
-            "WHERE error is NULL and query_timeout = 0 ".
-            "GROUP BY test_name, engine_name, type, original_query, memory ".
-            "ORDER BY original_query ASC ".
-            "LIMIT 1000000 ".
-            "OPTION max_matches=100000";
-
-        // the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
-        //$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
-
         curl_setopt($curl, CURLOPT_URL, "http://db:9308/sql");
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_POSTFIELDS, 'query='.urlencode($query));
@@ -81,6 +65,127 @@ class DataGetter
             return false;
         }
 
+        return $result;
+    }
+
+    public function getRow($id)
+    {
+        $query = "SELECT * FROM results WHERE id = ".(int) $id;
+
+        $decodedResult = json_decode($this->request($query), true);
+        if ($decodedResult) {
+            if ( ! isset($decodedResult['hits']['hits'][0]['_source'])) {
+                $this->printResponse('Can\t parse results for requested row', self::STATUS_ERROR, 404);
+            }
+
+            $response = $this->parseSingleInfo($decodedResult['hits']['hits'][0]['_source']);
+            unset($response['engine']);
+            $this->printResponse($response);
+        }
+
+        $this->printResponse(['message' => 'Requested row not found'], self::STATUS_ERROR, 404);
+    }
+
+    public function getDiff($firstId, $secondId)
+    {
+        $query = "SELECT * FROM results WHERE id in (".(int) $firstId.",".(int) $secondId.")";
+
+        $decodedResult = json_decode($this->request($query), true);
+        if ($decodedResult && count($decodedResult['hits']['hits']) === 2) {
+            $diff = [];
+            foreach ($decodedResult['hits']['hits'] as $row) {
+                $diff[] = $this->parseSingleInfo($row['_source']);
+            }
+
+            $this->printResponse($this->getSystemDiff($diff[0], $diff[1]));
+        }
+
+        $this->printResponse(['message' => 'Requested rows not found'], self::STATUS_ERROR, 404);
+    }
+
+    private function getSystemDiff($rowFirst, $rowSecond)
+    {
+        $rowFirstFileName  = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.$rowFirst['engine'];
+        $rowSecondFileName = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.$rowSecond['engine'];
+        unset($rowFirst['engine'], $rowSecond['engine']);
+
+        $compare = [];
+
+
+        file_put_contents($rowFirstFileName, $rowFirst['Response']."\n");
+        file_put_contents($rowSecondFileName, $rowSecond['Response']."\n");
+
+
+        $command = 'diff -U 1000000 -u '.$rowFirstFileName.' '.$rowSecondFileName;
+        $output  = [];
+        exec($command, $output, $exitCode);
+        if ($exitCode <= 1) {
+            if ($output !== []) {
+                $compare['Response'] = implode("\n", str_replace(DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR, "", $output));
+            }
+        } else {
+            $this->printResponse(['message' => 'Error during diff generation'], self::STATUS_ERROR, 400);
+        }
+
+
+        return $compare;
+    }
+
+    private function formatArrayToText($array)
+    {
+        $formatted = '';
+        foreach ($array as $k => $v) {
+            $formatted .= "$k: $v\n";
+        }
+
+        return $formatted;
+    }
+
+    private function parseSingleInfo(array $row)
+    {
+        return [
+            'Query'       => [
+                'original_query' => $row['original_query'],
+                'modified_query' => $row['modified_query'],
+            ],
+            'Performance' => [
+                'Cold run time'               => number_format($row['cold'])." μs",
+                'Fastest time'                => number_format($row['fastest'])." μs",
+                'Slowest time'                => number_format($row['slowest'])." μs",
+                'DB warmup time'              => number_format($row['warmup_time'])." μs",
+                'Average time (all attempts)' => number_format($row['avg'])." μs",
+                'CV (all attempts)'           => $row['cv']." %",
+
+                'Avg (80% fastest)' => number_format($row['avg_fastest'])." μs",
+
+                'CV of avg (80% fastest)' => $row['cv_avg_fastest']." %",
+                'Query runs'             => count($row['times']),
+            ],
+            'Response'    => $row['result'],
+            'Limits'      => [
+                'RAM limit' => $row['memory'],
+            ],
+            'engine'      => $row['engine_name'].'_'.$row['type'],
+        ];
+    }
+
+    public function query()
+    {
+        $query
+            = "SELECT ".
+            "    id, test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), ".
+            "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error), ".
+            "    test_info, server_info ".
+            "FROM results ".
+            "WHERE error is NULL and query_timeout = 0 ".
+            "GROUP BY test_name, engine_name, type, original_query, memory ".
+            "ORDER BY original_query ASC ".
+            "LIMIT 1000000 ".
+            "OPTION max_matches=100000";
+
+        // the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
+        //$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
+        $result = $this->request($query);
 
         $result = $this->perpareResponse($result);
         if ( ! $result) {
@@ -106,6 +211,7 @@ class DataGetter
             $fullServerInfo  = [];
             $shortServerInfo = [];
             foreach ($result['hits']['hits'] as $row) {
+                $id                       = $row['_id'];
                 $row                      = $row['_source'];
                 $tests[$row['test_name']] = 0;
                 $memory[$row['memory']]   = 0;
@@ -134,12 +240,14 @@ class DataGetter
                     }
                 }
 
+
                 $data[$row['test_name']][$row['memory']][md5($row['original_query'])]['query'] = $row['original_query'];
                 $data[$row['test_name']][$row['memory']][md5($row['original_query'])][$engine] = [
                     'slowest'  => $row['avg(slowest)'],
                     'fastest'  => $row['avg(fastest)'],
                     'fast_avg' => $row['avg(avg_fastest)'],
                     'checksum' => $row['min(checksum)'],
+                    'id'       => $id,
                 ];
 
                 $testsInfo[$row['test_name']] = $row['test_info'];
@@ -176,7 +284,9 @@ class DataGetter
                 // Need to select available engine in this test
 
                 if (isset($data[$selected['tests']][$selected['memory']])) {
-                    $firstTestQuery = array_shift($data[$selected['tests']][$selected['memory']]);
+
+
+                    $firstTestQuery = $data[$selected['tests']][$selected['memory']][key($data[$selected['tests']][$selected['memory']] )];
 
                     if (isset($firstTestQuery[$selected['engines'][0]]) && isset($firstTestQuery[$selected['engines'][1]])) {
                         foreach (['engines', 'tests', 'memory'] as $item) {
@@ -271,6 +381,13 @@ class DataGetter
     }
 }
 
-
 $dg = new DataGetter();
-$dg->query();
+if (isset($_GET['compare']) && isset($_GET['id1']) && isset($_GET['id2'])) {
+    $dg->getDiff($_GET['id1'], $_GET['id2']);
+} elseif ($_GET['info'] && isset($_GET['id'])) {
+    $dg->getRow($_GET['id']);
+} else {
+    $dg->query();
+}
+
+
