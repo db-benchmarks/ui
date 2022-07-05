@@ -149,17 +149,17 @@ class DataGetter
                 'modified_query' => $row['modified_query'],
             ],
             'Performance' => [
-                'Cold run time'               => number_format($row['cold'])." ms",
-                'Fastest time'                => number_format($row['fastest'])." ms",
-                'Slowest time'                => number_format($row['slowest']),
-                'DB warmup time'              => number_format($row['warmup_time'])." ms",
-                'Average time (all attempts)' => number_format($row['avg'])." ms",
+                'Cold run time'               => number_format($row['cold'])." μs",
+                'Fastest time'                => number_format($row['fastest'])." μs",
+                'Slowest time'                => number_format($row['slowest'])." μs",
+                'DB warmup time'              => number_format($row['warmup_time'])." μs",
+                'Average time (all attempts)' => number_format($row['avg'])." μs",
                 'CV (all attempts)'           => $row['cv']." %",
 
-                'Avg (80% fastest)' => number_format($row['avg_fastest'])." ms",
+                'Avg (80% fastest)' => number_format($row['avg_fastest'])." μs",
 
                 'CV of avg (80% fastest)' => $row['cv_avg_fastest']." %",
-                'Times count'             => count($row['times']),
+                'Query runs'             => count($row['times']),
             ],
             'Response'    => $row['result'],
             'Limits'      => [
