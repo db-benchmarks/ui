@@ -160,9 +160,7 @@ export default {
       parsedQueryInfo: {},
       compareIds: [],
       diff: {},
-      datasetInfo: {
-        info: {}
-      },
+      datasetInfo: {},
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
     }
   },
@@ -204,7 +202,7 @@ export default {
     showDatasetInfo(engine) {
       this.datasetInfo['info'] = {};
       axios.get(this.getServerUrl + '/api?dataset_info=1&id=' + this.compareIds[0][engine]).then(response => {
-        this.datasetInfo['info'] = response.data.result;
+        this.datasetInfo = response.data.result;
         JQuery('#modal-dataset-info').modal('show');
       })
     },
