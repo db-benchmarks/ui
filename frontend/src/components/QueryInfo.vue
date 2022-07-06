@@ -2,7 +2,7 @@
   <ModalLargeScroll modal-id="modal-query-info">
     <template v-slot:header>
       <div>
-        <h4>Query execution info</h4>
+        <h4>Query execution info for:</h4>
         <p>Query: <span class="p-content">{{ getQuery() }}</span></p>
         <p>Database: <span class="p-content">{{ engineInQueryInfo }}</span></p>
       </div>
