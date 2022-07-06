@@ -104,7 +104,11 @@
                v-on:showDatasetInfo="showDatasetInfo"
         />
       </div>
-      <QueryInfo v-bind:tabsContent="parsedQueryInfo"></QueryInfo>
+      <QueryInfo
+          v-bind:tabsContent="parsedQueryInfo"
+          v-bind:queryInfo="queryInfo"
+          v-bind:engineInQueryInfo="engineInQueryInfo"
+      ></QueryInfo>
       <QueryDiff v-bind:diff="diff"></QueryDiff>
       <DatasetInfo v-bind:tabs-content="datasetInfo"></DatasetInfo>
       <footer class="my-5 pt-5 text-muted text-center text-small">
@@ -152,6 +156,7 @@ export default {
       resultsCount: 0,
       selectedTest: 0,
       queryInfo: {},
+      engineInQueryInfo: null,
       parsedQueryInfo: {},
       compareIds: [],
       diff: {},
@@ -210,6 +215,7 @@ export default {
       let index = Math.ceil(id / grouppedCount) - 1;
 
       let engineName = selectedEngines[index];
+      this.engineInQueryInfo = engineName;
       let compareId = this.compareIds[row][engineName];
 
       axios.get(this.getServerUrl + '/api?info=1&id=' + compareId).then(response => {

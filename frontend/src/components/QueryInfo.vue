@@ -1,7 +1,11 @@
 <template>
   <ModalLargeScroll modal-id="modal-query-info">
     <template v-slot:header>
-      Query execution info
+      <div>
+        <h4>Query execution info</h4>
+        <p>Query: <span class="p-content">{{ getQuery() }}</span></p>
+        <p>Database: <span class="p-content">{{ engineInQueryInfo }}</span></p>
+      </div>
     </template>
     <template v-slot:content>
       <Tabs v-bind:items="tabsContent"></Tabs>
@@ -19,11 +23,31 @@ export default {
   props: {
     tabsContent: {
       required: true
+    },
+    queryInfo: {
+      required: true
+    },
+    engineInQueryInfo: {
+      required: true
+    }
+  },
+  methods: {
+    getQuery() {
+      if (this.queryInfo.Query !== undefined) {
+        return this.queryInfo['Query']['Original query']
+      }
     }
   }
 }
 </script>
 
 <style scoped>
+p {
+  margin-bottom: 0;
+}
 
+.p-content {
+  font-weight: bold;
+  font-size: small;
+}
 </style>
