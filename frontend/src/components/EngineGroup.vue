@@ -65,12 +65,11 @@ export default {
     checkChildIsSingle(groupName, blockItems, target) {
       let items = this.filterItems(groupName);
       let itemKeys = Object.keys(items);
-
+      JQuery('div[data-parent="#eg-accordion"]').removeClass('show')
       if (itemKeys.length === 1) {
         items[itemKeys[0]][Object.keys(blockItems)[0]] = !items[itemKeys[0]][Object.keys(blockItems)[0]]
         this.$emit('changed')
       } else {
-        JQuery('div[data-parent="#eg-accordion"]').removeClass('show')
         JQuery(target).collapse('show');
       }
     },
