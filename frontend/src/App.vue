@@ -101,11 +101,16 @@
                v-on:update:checked="modifyUrl()"
                v-on:showDiff="showDiff"
                v-on:showInfo="showInfo"
-
+               v-on:showDatasetInfo="showDatasetInfo"
         />
       </div>
-      <QueryInfo v-bind:tabsContent="parsedQueryInfo"></QueryInfo>
+      <QueryInfo
+          v-bind:tabsContent="parsedQueryInfo"
+          v-bind:queryInfo="queryInfo"
+          v-bind:engineInQueryInfo="engineInQueryInfo"
+      ></QueryInfo>
       <QueryDiff v-bind:diff="diff"></QueryDiff>
+      <DatasetInfo v-bind:tabs-content="datasetInfo" v-bind:engine="engineInDatasetInfo"></DatasetInfo>
       <footer class="my-5 pt-5 text-muted text-center text-small">
       </footer>
     </div>
@@ -121,10 +126,12 @@ import TestInfo from "@/components/TestInfo";
 import QueryInfo from "@/components/QueryInfo";
 import JQuery from 'jquery'
 import QueryDiff from "@/components/QueryDiff";
+import DatasetInfo from "./components/DatasetInfo";
 
 export default {
   name: 'App',
   components: {
+    DatasetInfo,
     QueryDiff,
     QueryInfo,
     TestInfo,
@@ -152,7 +159,10 @@ export default {
       parsedQueryInfo: {},
       compareIds: [],
       diff: {},
+      datasetInfo: {},
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
+      engineInQueryInfo: null,
+      engineInDatasetInfo: null,
     }
   },
   created() {
@@ -190,6 +200,14 @@ export default {
     }
   },
   methods: {
+    showDatasetInfo(engine) {
+      this.datasetInfo['info'] = {};
+      axios.get(this.getServerUrl + '/api?dataset_info=1&id=' + this.compareIds[0][engine]).then(response => {
+        this.datasetInfo = response.data.result;
+        this.engineInDatasetInfo = engine;
+        JQuery('#modal-dataset-info').modal('show');
+      })
+    },
     showInfo(row, id) {
 
       let selectedEngines = this.getSelectedRow(this.engines)
@@ -197,6 +215,7 @@ export default {
       let index = Math.ceil(id / grouppedCount) - 1;
 
       let engineName = selectedEngines[index];
+      this.engineInQueryInfo = engineName;
       let compareId = this.compareIds[row][engineName];
 
       axios.get(this.getServerUrl + '/api?info=1&id=' + compareId).then(response => {
@@ -205,7 +224,6 @@ export default {
     },
     showDiff(row) {
       let ids = Object.values(this.compareIds[row]);
-      console.log(row, this.compareIds[row])
       axios.get(this.getServerUrl + "/api?compare=1&id1=" + ids[0] + "&id2=" + ids[1]).then(response => {
         this.diff = response.data.result;
         JQuery('#modal-query-diff').modal('show');

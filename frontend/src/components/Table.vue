@@ -41,6 +41,10 @@
               {{
                 key.replaceAll(/(manticore)_(master|columnar)_(.*?)_(.*?)/g, 'Manticore $2 $3 $4').replaceAll('_', ' ')
               }}
+              <DatasetInfoIcon
+                  v-bind:engine="key"
+                  v-on:showDatasetInfo="emitShowDatasetInfo"
+              ></DatasetInfoIcon>
             </th>
           </template>
           <template v-else>
@@ -48,6 +52,10 @@
               {{
                 key.replaceAll(/(manticore)_(master|columnar)_(.*?)_(.*?)/g, 'Manticore $2 $3 $4').replaceAll('_', ' ')
               }}
+              <DatasetInfoIcon
+                  v-bind:engine="key"
+                  v-on:showDatasetInfo="emitShowDatasetInfo"
+              ></DatasetInfoIcon>
             </th>
           </template>
         </tr>
@@ -152,9 +160,10 @@ import QuerySelector from "@/components/QuerySelector";
 import DiffIcon from "@/components/DiffIcon";
 import InfoIcon from "@/components/InfoIcon";
 import QuestionIcon from "@/components/QuestionIcon";
+import DatasetInfoIcon from "./DatasetInfoIcon";
 
 export default {
-  components: {QuerySelector, Bar, DiffIcon, InfoIcon, QuestionIcon},
+  components: {DatasetInfoIcon, QuerySelector, Bar, DiffIcon, InfoIcon, QuestionIcon},
   props: {
     results: {
       type: Array,
@@ -212,6 +221,9 @@ export default {
     },
   },
   methods: {
+    emitShowDatasetInfo(engine) {
+      this.$emit("showDatasetInfo", engine);
+    },
     emitShowInfo(row, id) {
       this.$emit('showInfo', row, id);
     },
