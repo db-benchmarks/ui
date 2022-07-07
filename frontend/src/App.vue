@@ -110,7 +110,7 @@
           v-bind:engineInQueryInfo="engineInQueryInfo"
       ></QueryInfo>
       <QueryDiff v-bind:diff="diff"></QueryDiff>
-      <DatasetInfo v-bind:tabs-content="datasetInfo"></DatasetInfo>
+      <DatasetInfo v-bind:tabs-content="datasetInfo" v-bind:engine="engineInDatasetInfo"></DatasetInfo>
       <footer class="my-5 pt-5 text-muted text-center text-small">
       </footer>
     </div>
@@ -156,12 +156,13 @@ export default {
       resultsCount: 0,
       selectedTest: 0,
       queryInfo: {},
-      engineInQueryInfo: null,
       parsedQueryInfo: {},
       compareIds: [],
       diff: {},
       datasetInfo: {},
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
+      engineInQueryInfo: null,
+      engineInDatasetInfo: null,
     }
   },
   created() {
@@ -203,6 +204,7 @@ export default {
       this.datasetInfo['info'] = {};
       axios.get(this.getServerUrl + '/api?dataset_info=1&id=' + this.compareIds[0][engine]).then(response => {
         this.datasetInfo = response.data.result;
+        this.engineInDatasetInfo = engine;
         JQuery('#modal-dataset-info').modal('show');
       })
     },
