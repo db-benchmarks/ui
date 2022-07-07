@@ -9,10 +9,9 @@
   <div id="eg-accordion">
     <div class="row mt-4">
       <template v-for="(value, name) in groups">
-        <div class="col-2 d-flex justify-content-center" :key="name"
-             data-toggle="collapse" :data-target="'#collapse-'+name" role="button" aria-expanded="false"
-             :aria-controls="'collapse-'+name">
-          <div :class="'d-flex engine-block justify-content-center'+ (isAnyActive(name) ? ' active-engine' : '')">
+        <div class="col-2 d-flex justify-content-center" :key="name" role="button">
+          <div @click="checkChildIsSingle(name, value, '#collapse-'+name)"
+               :class="'d-flex engine-block justify-content-center'+ (isAnyActive(name) ? ' active-engine' : '')">
             <img :src="require(`@/assets/logos/${name}.svg`)">
             <span class="engine-badge">{{ getActiveItemsCount(value) }}</span>
           </div>
@@ -20,7 +19,6 @@
         </div>
       </template>
     </div>
-
 
     <template v-for="(value, name) in groups">
       <div :key="name" class="row mt-4 collapse multi-collapse" :id="'collapse-'+name"
@@ -41,6 +39,7 @@
 
 <script>
 import ButtonGroup from "@/components/ButtonGroup";
+import JQuery from "jquery";
 
 export default {
   components: {
@@ -62,6 +61,18 @@ export default {
   methods: {
     changed() {
       this.$emit('changed')
+    },
+    checkChildIsSingle(groupName, blockItems, target) {
+      let items = this.filterItems(groupName);
+      let itemKeys = Object.keys(items);
+
+      if (itemKeys.length === 1) {
+        items[itemKeys[0]][Object.keys(blockItems)[0]] = !items[itemKeys[0]][Object.keys(blockItems)[0]]
+        this.$emit('changed')
+      } else {
+        JQuery('div[data-parent="#eg-accordion"]').removeClass('show')
+        JQuery(target).collapse('show');
+      }
     },
     filterItems(groupName) {
       const asArray = Object.entries(this.items);

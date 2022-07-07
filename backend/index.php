@@ -68,9 +68,9 @@ class DataGetter
         return $result;
     }
 
-    public function getRow($id)
+    public function getRow(int $id)
     {
-        $query = "SELECT * FROM results WHERE id = ".(int) $id;
+        $query = "SELECT * FROM results WHERE id = ".$id;
 
         $decodedResult = json_decode($this->request($query), true);
         if ($decodedResult) {
@@ -86,9 +86,9 @@ class DataGetter
         $this->printResponse(['message' => 'Requested row not found'], self::STATUS_ERROR, 404);
     }
 
-    public function getDiff($firstId, $secondId)
+    public function getDiff(int $firstId, int $secondId)
     {
-        $query = "SELECT * FROM results WHERE id in (".(int) $firstId.",".(int) $secondId.")";
+        $query = "SELECT * FROM results WHERE id in (".$firstId.",".$secondId.")";
 
         $decodedResult = json_decode($this->request($query), true);
         if ($decodedResult && count($decodedResult['hits']['hits']) === 2) {
@@ -101,6 +101,41 @@ class DataGetter
         }
 
         $this->printResponse(['message' => 'Requested rows not found'], self::STATUS_ERROR, 404);
+    }
+
+    public function getDatasetInfo(int $id)
+    {
+        $query = "SELECT * FROM results WHERE id = ".$id;
+
+        $decodedResult = json_decode($this->request($query), true);
+        if ($decodedResult) {
+            if ( ! isset($decodedResult['hits']['hits'][0]['_source'])) {
+                $this->printResponse('Can\t parse results for requested row', self::STATUS_ERROR, 404);
+            }
+
+            $info        = $decodedResult['hits']['hits'][0]['_source']['info'];
+            $datasetInfo = [
+                'DB Info' => [
+                    'Version'     => $info['version'],
+                    'URL'         => $info['url'],
+                    'Description' => $info['description'],
+                ],
+                'Dataset' => [
+                    'Documents count' => $info['datasetCount'],
+                    'Sample document' => $info['datasetSampleDocument'],
+                ],
+            ];
+
+            foreach (['version', 'url', 'description', 'datasetCount', 'datasetSampleDocument'] as $key) {
+                unset($info[$key]);
+            }
+
+            $datasetInfo['Misc'] = $info;
+
+            $this->printResponse($datasetInfo);
+        }
+
+        $this->printResponse(['message' => 'Requested row not found'], self::STATUS_ERROR, 404);
     }
 
     private function getSystemDiff($rowFirst, $rowSecond)
@@ -121,7 +156,8 @@ class DataGetter
         exec($command, $output, $exitCode);
         if ($exitCode <= 1) {
             if ($output !== []) {
-                $compare['Response'] = implode("\n", str_replace(DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR, "", $output));
+                $compare['Response'] = implode("\n",
+                    str_replace(DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR, "", $output));
             }
         } else {
             $this->printResponse(['message' => 'Error during diff generation'], self::STATUS_ERROR, 400);
@@ -145,13 +181,13 @@ class DataGetter
     {
         return [
             'Query'       => [
-                'original_query' => $row['original_query'],
-                'modified_query' => $row['modified_query'],
+                'Original query' => $row['original_query'],
+                'Adapted query'  => ' '.$row['modified_query'],
             ],
             'Performance' => [
                 'Cold run time'               => number_format($row['cold'])." μs",
                 'Fastest time'                => number_format($row['fastest'])." μs",
-                'Slowest time'                => number_format($row['slowest'])." μs",
+                'Slowest time'                => number_format($row['slowest']),
                 'DB warmup time'              => number_format($row['warmup_time'])." μs",
                 'Average time (all attempts)' => number_format($row['avg'])." μs",
                 'CV (all attempts)'           => $row['cv']." %",
@@ -159,7 +195,7 @@ class DataGetter
                 'Avg (80% fastest)' => number_format($row['avg_fastest'])." μs",
 
                 'CV of avg (80% fastest)' => $row['cv_avg_fastest']." %",
-                'Query runs'             => count($row['times']),
+                'Query runs'              => count($row['times']),
             ],
             'Response'    => $row['result'],
             'Limits'      => [
@@ -258,7 +294,7 @@ class DataGetter
                 }
             }
 
-            krsort($engines, SORT_STRING);
+            ksort($engines, SORT_STRING);
 
             for ($i = 1; $i <= 30; $i++) {
                 $sorted   = [];
@@ -284,9 +320,7 @@ class DataGetter
                 // Need to select available engine in this test
 
                 if (isset($data[$selected['tests']][$selected['memory']])) {
-
-
-                    $firstTestQuery = $data[$selected['tests']][$selected['memory']][key($data[$selected['tests']][$selected['memory']] )];
+                    $firstTestQuery = $data[$selected['tests']][$selected['memory']][key($data[$selected['tests']][$selected['memory']])];
 
                     if (isset($firstTestQuery[$selected['engines'][0]]) && isset($firstTestQuery[$selected['engines'][1]])) {
                         foreach (['engines', 'tests', 'memory'] as $item) {
@@ -383,9 +417,11 @@ class DataGetter
 
 $dg = new DataGetter();
 if (isset($_GET['compare']) && isset($_GET['id1']) && isset($_GET['id2'])) {
-    $dg->getDiff($_GET['id1'], $_GET['id2']);
+    $dg->getDiff((int) $_GET['id1'], (int) $_GET['id2']);
+} elseif ($_GET['dataset_info'] && isset($_GET['id'])) {
+    $dg->getDatasetInfo((int) $_GET['id']);
 } elseif ($_GET['info'] && isset($_GET['id'])) {
-    $dg->getRow($_GET['id']);
+    $dg->getRow((int) $_GET['id']);
 } else {
     $dg->query();
 }
