@@ -37,7 +37,8 @@
             </div>
           </th>
           <template v-if="grouped">
-            <th v-bind:colspan="groupedCount" scope="col" v-for="key in engines" :key="engines[key]">
+            <th :class="classes.tableHeader" v-bind:colspan="groupedCount" scope="col" v-for="key in engines"
+                :key="engines[key]">
               {{
                 key.replaceAll(/(manticore)_(master|columnar)_(.*?)_(.*?)/g, 'Manticore $2 $3 $4').replaceAll('_', ' ')
               }}
@@ -48,7 +49,7 @@
             </th>
           </template>
           <template v-else>
-            <th scope="col" v-for="key in engines" :key="engines[key]">
+            <th :class="classes.tableHeader" scope="col" v-for="key in engines" :key="engines[key]">
               {{
                 key.replaceAll(/(manticore)_(master|columnar)_(.*?)_(.*?)/g, 'Manticore $2 $3 $4').replaceAll('_', ' ')
               }}
@@ -61,7 +62,7 @@
         </tr>
 
         <tr>
-          <th scope="col" v-for="key in cache" :key="cache[key]">
+          <th scope="col" :class="classes.tableHeader" v-for="key in cache" :key="cache[key]">
             {{ key.replaceAll("_", " ").capitalize() }}
           </th>
         </tr>
@@ -69,16 +70,18 @@
         <tbody>
 
         <tr v-for="(index, row) in results" :key="results[index]">
-          <td
+          <td :class="classes.tableCeil"
               v-bind:style="{ 'background-color': getBackgroundColor(row, id), 'color':getTextColor(row, id) }"
               v-for="(key, id) in index" :key="key[index]">
             <div class="d-flex align-items-center">
               <template v-if="currentRelation=getRelation(row, id)">
                 <template v-if="currentRelation!=1.00">
-                  <span class="table-value flex-grow-1">x{{ currentRelation }}<span class="table-relation">&nbsp;({{ key }} ms)</span></span>
+                  <span class="table-value flex-grow-1">x{{ currentRelation }}<span class="table-relation">&nbsp;({{
+                      key
+                    }} ms)</span></span>
                 </template>
                 <template v-else>
-                  <span class="flex-grow-1">{{ key }} ms</span>
+                  <span class="flex-grow-1 table-relation">{{ key }} ms</span>
                 </template>
                 <template v-if="checkCheckSum(row, id)">
                   &nbsp;<InfoIcon v-bind:row="row"
@@ -126,23 +129,24 @@
         </tr>
 
         <tr>
-          <td>Arithmetic mean of ratios</td>
-          <td v-for="(row, id) in rowSum.eachRow" :key="id">
+          <td :class="classes.tableCeil">Arithmetic mean of ratios</td>
+          <td :class="classes.tableCeil" v-for="(row, id) in rowSum.eachRow" :key="id">
             <template v-if="row.value!=0">x{{ row.value }}</template>
           </td>
         </tr>
 
         <tr>
-          <td>Geometric mean of ratios</td>
-          <td v-for="(row, id) in rowSum.geomean" :key="id">
+          <td :class="classes.tableCeil">Geometric mean of ratios</td>
+          <td :class="classes.tableCeil" v-for="(row, id) in rowSum.geomean" :key="id">
             <template v-if="row.value!=0">x{{ row.value }}</template>
           </td>
         </tr>
 
         <template v-if="this.grouped">
           <tr>
-            <td>Grouped</td>
-            <td v-bind:colspan="groupedCount" v-for="(row, id) in rowSum.grouped" :key="id">
+            <td :class="classes.tableCeil">Grouped</td>
+            <td :class="classes.tableCeil" v-bind:colspan="groupedCount" v-for="(row, id) in rowSum.grouped"
+                :key="id">
               <template v-if="row!=0">x{{ row }}</template>
             </td>
           </tr>
@@ -197,6 +201,10 @@ export default {
       barNames: [],
       engineNames: [],
       grouped: false,
+      classes: {
+        tableHeader: "",
+        tableCeil:""
+      },
       allQueryChecker: {
         checked: false,
         indeterminate: false
@@ -213,6 +221,28 @@ export default {
     checkedQueries() {
       this.updateComputed();
       this.$emit('update:checked');
+    },
+    cache() {
+      this.classes.tableHeader = '';
+      if (this.cache.length <= 2) {
+        this.classes.tableHeader = 'th-4';
+        this.classes.tableCeil = 'td-2';
+      } else if (this.cache.length <= 4) {
+        this.classes.tableHeader = 'th-4';
+        this.classes.tableCeil = 'td-4';
+      } else if (this.cache.length <= 6) {
+        this.classes.tableHeader = 'th-6';
+        this.classes.tableCeil = 'td-6';
+      } else if (this.cache.length <= 8) {
+        this.classes.tableHeader = 'th-8';
+        this.classes.tableCeil = 'td-8';
+      } else if (this.cache.length <= 12) {
+        this.classes.tableHeader = 'th-12';
+        this.classes.tableCeil = 'td-12';
+      } else if (this.cache.length <= 16) {
+        this.classes.tableHeader = 'th-16';
+        this.classes.tableCeil = 'td-16';
+      }
     }
   },
   computed: {
@@ -631,8 +661,8 @@ export default {
   padding: 0.35rem !important;
 }
 
-.table td:not(:first-of-type) {
-  white-space: nowrap;
+.table td:first-of-type {
+  white-space: normal !important;
 }
 
 .table thead {
@@ -664,7 +694,78 @@ h5 {
   margin-top: 35px !important;
   font-weight: bold !important;
 }
-.table-relation{
+
+.table-relation {
   font-weight: normal;
+}
+
+.th-normal{
+  font-size: medium;
+}
+
+.th-6 {
+  white-space: normal;
+}
+
+.th-8 {
+  font-size: small;
+}
+
+.th-16 {
+  font-size: x-small;
+}
+
+
+.td-2 {
+  width: 30%;
+  white-space: nowrap;
+}
+
+.td-4 {
+  width: 20%;
+  white-space: nowrap;
+}
+
+.td-6 {
+  width: 15%;
+  white-space: nowrap;
+}
+
+.td-8 {
+  width: 15%;
+  white-space: normal;
+  font-size: smaller;
+}
+
+.td-12 {
+  width: 10%;
+  white-space: normal;
+  font-size: small;
+}
+
+.td-16 {
+  width: 10%;
+  white-space: normal;
+  font-size: small;
+}
+
+.td-12 .table-relation {
+  display: none;
+}
+
+.td-16 .table-relation {
+  display: none;
+}
+
+.td-16 .table-value {
+  display: none;
+}
+
+div .table-relation{
+  font-size: medium;
+}
+
+.table-value .table-relation{
+  font-size: small;
 }
 </style>
