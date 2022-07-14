@@ -242,6 +242,9 @@ export default {
       } else if (this.cache.length <= 16) {
         this.classes.tableHeader = 'th-16';
         this.classes.tableCeil = 'td-16';
+      }else {
+        this.classes.tableHeader = 'th-16';
+        this.classes.tableCeil = 'td-16';
       }
     }
   },
@@ -711,61 +714,72 @@ h5 {
   font-size: small;
 }
 
-.th-16 {
+.th-10, .th-12, .th-16 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 65px;
+  font-size: 0.75vw;
+}
+
+.th-12{
+  max-width: 60px;
   font-size: x-small;
 }
 
-
+.th-16{
+  max-width: 15px;
+  font-size: xx-small;
+}
 .td-2 {
-  width: 30%;
-  white-space: nowrap;
+width: 30%;
+white-space: nowrap;
 }
 
 .td-4 {
-  width: 20%;
-  white-space: nowrap;
+width: 20%;
+white-space: nowrap;
 }
 
 .td-6 {
-  width: 15%;
-  white-space: nowrap;
+width: 15%;
+white-space: nowrap;
 }
 
 .td-8 {
-  width: 15%;
-  white-space: normal;
-  font-size: smaller;
+width: 15%;
+white-space: normal;
+font-size: smaller;
 }
 
 .td-12 {
-  width: 10%;
-  white-space: normal;
-  font-size: small;
+width: 10%;
+white-space: normal;
+font-size: small;
 }
 
 .td-16 {
-  width: 10%;
-  white-space: normal;
-  font-size: small;
+width: 10%;
+white-space: normal;
+font-size: small;
 }
 
 .td-12 .table-relation {
-  display: none;
+display: none;
 }
 
 .td-16 .table-relation {
-  display: none;
+display: none;
 }
 
 .td-16 .table-value {
-  display: none;
+display: none;
 }
 
 div .table-relation{
-  font-size: medium;
+font-size: medium;
 }
 
 .table-value .table-relation{
-  font-size: small;
+font-size: small;
 }
 </style>
