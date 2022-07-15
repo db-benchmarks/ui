@@ -6,7 +6,7 @@
  * https://www.gnu.org/licenses/agpl-3.0.txt
  */
 <template>
-  <div class="container mt-3">
+  <div class="align-items-start m-3">
     <template v-for="(row, index) in rows">
 
       <div :key="rows[row]" class="row"

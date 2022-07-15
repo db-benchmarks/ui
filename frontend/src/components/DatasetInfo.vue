@@ -1,7 +1,7 @@
 <template>
   <ModalLargeScroll modal-id="modal-dataset-info">
     <template v-slot:header>
-      <p>Info about <strong>{{ engine.replaceAll('_',' ') }}</strong> and the dataset in the database</p>
+      <p>Info about <strong>{{ sanitize(engine) }}</strong> and the dataset in the database</p>
     </template>
     <template v-slot:content>
       <Tabs v-bind:items="parsedContent"></Tabs>
@@ -65,6 +65,12 @@ export default {
     }
   },
   methods: {
+    sanitize(row) {
+      if (row !== null) {
+        return row.replaceAll('_', ' ');
+      }
+      return "";
+    },
     validURL(str) {
       var pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
           '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name

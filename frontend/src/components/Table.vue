@@ -223,27 +223,27 @@ export default {
       this.$emit('update:checked');
     },
     cache() {
-      this.classes.tableHeader = '';
+      this.classes.tableHeader = ['align-top'];
       if (this.cache.length <= 2) {
-        this.classes.tableHeader = 'th-4';
+        this.classes.tableHeader.push('th-4');
         this.classes.tableCeil = 'td-2';
       } else if (this.cache.length <= 4) {
-        this.classes.tableHeader = 'th-4';
+        this.classes.tableHeader.push('th-4');
         this.classes.tableCeil = 'td-4';
       } else if (this.cache.length <= 6) {
-        this.classes.tableHeader = 'th-6';
+        this.classes.tableHeader.push('th-6');
         this.classes.tableCeil = 'td-6';
       } else if (this.cache.length <= 8) {
-        this.classes.tableHeader = 'th-8';
+        this.classes.tableHeader.push('th-8');
         this.classes.tableCeil = 'td-8';
       } else if (this.cache.length <= 12) {
-        this.classes.tableHeader = 'th-12';
+        this.classes.tableHeader.push('th-12');
         this.classes.tableCeil = 'td-12';
       } else if (this.cache.length <= 16) {
-        this.classes.tableHeader = 'th-16';
+        this.classes.tableHeader.push('th-16');
         this.classes.tableCeil = 'td-16';
       }else {
-        this.classes.tableHeader = 'th-16';
+        this.classes.tableHeader.push('th-16');
         this.classes.tableCeil = 'td-16';
       }
     }
