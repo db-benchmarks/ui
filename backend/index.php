@@ -187,7 +187,7 @@ class DataGetter
             'Performance' => [
                 'Cold run time'               => number_format($row['cold'])." μs",
                 'Fastest time'                => number_format($row['fastest'])." μs",
-                'Slowest time'                => number_format($row['slowest']),
+                'Slowest time'                => number_format($row['slowest'])." μs",
                 'DB warmup time'              => number_format($row['warmup_time'])." μs",
                 'Average time (all attempts)' => number_format($row['avg'])." μs",
                 'CV (all attempts)'           => $row['cv']." %",
