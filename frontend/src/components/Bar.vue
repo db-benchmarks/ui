@@ -7,12 +7,12 @@
  */
 <template>
   <div class="align-items-start m-3">
-    <template v-for="(row, index) in rows">
+    <template v-for="(row, index) in sortRows">
 
-      <div :key="rows[row]" class="row"
-           v-bind:class="[checkGroupingOffcet(index) ?'mb-2' : '' ]">
+      <div :key="sortRows[row]" class="row"
+           v-bind:class="[checkGroupingOffset(index+1) ? 'mb-2' : '' ]">
         <div class="col-4">
-          <span class="bar-name">{{ names[index - 1] }}</span></div>
+          <span class="bar-name">{{ row.engine }}</span></div>
         <div class="col-8">
           <div class="progress mt-1">
             <div class="progress-bar progress-bar-striped"
@@ -39,28 +39,32 @@ export default {
       type: Object,
       required: true
     },
-    names: {
-      type: Array,
-      required: true
-    },
-    cache: {
-      type: Array,
-      required: true
-    },
-    groupedCount: {
+    groupOffset: {
       type: Number,
       required: true
     }
   },
   methods: {
-    checkGroupingOffcet(row) {
-      if (this.groupedCount > 1) {
-        if (row % this.groupedCount == 0) {
-          return true;
-        }
-        return false
+    checkGroupingOffset(row) {
+      if (this.groupOffset > 1) {
+        return row % (Object.keys(this.rows).length / this.groupOffset) === 0;
       }
       return false;
+    },
+
+  },
+  computed:{
+    sortRows: function (){
+      return Object.values(this.rows)
+          .sort(function (a, b) {
+
+            if (a.type < b.type) return -1;
+            if (a.type > b.type) return 1;
+            if (a.value < b.value) return -1;
+            if (a.value > b.value) return 1;
+
+            return 0
+          })
     }
   }
 }
