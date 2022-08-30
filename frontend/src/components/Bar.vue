@@ -58,6 +58,7 @@ export default {
       return Object.values(this.rows)
           .sort(function (a, b) {
 
+            a.value = parseFloat(a.value);
             if (a.type < b.type) return -1;
             if (a.type > b.type) return 1;
             if (a.value < b.value) return -1;
