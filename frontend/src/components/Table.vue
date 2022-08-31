@@ -10,9 +10,7 @@
     <hr>
     <h5>Relative query processing time (lower is better)</h5>
     <Bar v-bind:rows="rowSum.relative"
-         v-bind:cache="cache"
-         v-bind:names="barNames"
-         v-bind:grouped-count="groupedCount"/>
+         v-bind:group-offset="groupedCount"/>
     <div class="container mt-3">
       <small>
         ❗Take into account that these final results are based on the below queries and can't be used as an
@@ -203,7 +201,7 @@ export default {
       grouped: false,
       classes: {
         tableHeader: "",
-        tableCeil:""
+        tableCeil: ""
       },
       allQueryChecker: {
         checked: false,
@@ -242,7 +240,7 @@ export default {
       } else if (this.cache.length <= 16) {
         this.classes.tableHeader.push('th-16');
         this.classes.tableCeil = 'td-16';
-      }else {
+      } else {
         this.classes.tableHeader.push('th-16');
         this.classes.tableCeil = 'td-16';
       }
@@ -515,12 +513,17 @@ export default {
           if (val === minValue[engineId]) {
             rowSum.relative[row] = {
               value: 1,
-              percent: ((val / maxValue[engineId]) * 100).toFixed(2)
+              percent: ((val / maxValue[engineId]) * 100).toFixed(2),
+              engine: this.barNames[row - 1],
+              type: this.cache[row - 1]
+
             }
           } else {
             rowSum.relative[row] = {
               value: (val / minValue[engineId]).toFixed(2),
-              percent: ((val / maxValue[engineId]) * 100).toFixed(2)
+              percent: ((val / maxValue[engineId]) * 100).toFixed(2),
+              engine: this.barNames[row - 1],
+              type: this.cache[row - 1]
             };
           }
         }
@@ -702,7 +705,7 @@ h5 {
   font-weight: normal;
 }
 
-.th-normal{
+.th-normal {
   font-size: medium;
 }
 
@@ -721,65 +724,66 @@ h5 {
   font-size: 0.75vw;
 }
 
-.th-12{
+.th-12 {
   max-width: 60px;
   font-size: x-small;
 }
 
-.th-16{
+.th-16 {
   max-width: 15px;
   font-size: xx-small;
 }
+
 .td-2 {
-width: 30%;
-white-space: nowrap;
+  width: 30%;
+  white-space: nowrap;
 }
 
 .td-4 {
-width: 20%;
-white-space: nowrap;
+  width: 20%;
+  white-space: nowrap;
 }
 
 .td-6 {
-width: 15%;
-white-space: nowrap;
+  width: 15%;
+  white-space: nowrap;
 }
 
 .td-8 {
-width: 15%;
-white-space: normal;
-font-size: smaller;
+  width: 15%;
+  white-space: normal;
+  font-size: smaller;
 }
 
 .td-12 {
-width: 10%;
-white-space: normal;
-font-size: small;
+  width: 10%;
+  white-space: normal;
+  font-size: small;
 }
 
 .td-16 {
-width: 10%;
-white-space: normal;
-font-size: small;
+  width: 10%;
+  white-space: normal;
+  font-size: small;
 }
 
 .td-12 .table-relation {
-display: none;
+  display: none;
 }
 
 .td-16 .table-relation {
-display: none;
+  display: none;
 }
 
 .td-16 .table-value {
-display: none;
+  display: none;
 }
 
-div .table-relation{
-font-size: medium;
+div .table-relation {
+  font-size: medium;
 }
 
-.table-value .table-relation{
-font-size: small;
+.table-value .table-relation {
+  font-size: small;
 }
 </style>
