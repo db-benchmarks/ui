@@ -198,6 +198,7 @@ class DataGetter
                 'Query runs'              => count($row['times']),
             ],
             'Response'    => $row['result'],
+            'Stats'  => $row['stats'],
             'Limits'      => [
                 'RAM limit' => $row['memory'],
             ],
@@ -425,5 +426,3 @@ if (isset($_GET['compare']) && isset($_GET['id1']) && isset($_GET['id2'])) {
 } else {
     $dg->query();
 }
-
-
