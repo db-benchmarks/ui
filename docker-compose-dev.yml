@@ -15,7 +15,7 @@ services:
     restart: always
     # put HOSTNAME to .env
     environment:
-      - HOSTNAME=${HOSTNAME}
+      - HOSTNAME=${HTTP_HOSTNAME}
       - NGINX_ENVSUBST_TEMPLATE_DIR=${NGINX_TEMPLATES_DIR}
     volumes:
       - ./nginx/templates/:/etc/nginx/templates/:ro
@@ -72,4 +72,4 @@ services:
       - BASIC_AUTH_USERNAME=${DB_USERNAME}
       - BASIC_AUTH_PASSWORD=${DB_PASSWORD}
       - PROXY_PASS=http://db:9308
-      - SERVER_NAME=db.${HOSTNAME}
+      - SERVER_NAME=db.${HTTP_HOSTNAME}
