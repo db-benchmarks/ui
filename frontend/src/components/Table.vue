@@ -620,6 +620,10 @@ export default {
             } else {
               if (currentRelation <= 1.03) {
                 obj['color'] = "RGB(0, 255, 0)"; // green
+              } else if (Math.abs(item.value - minValue[byRow]) <= 2 && minValue[byRow] >= 10 && minValue[byRow] <= 30) {
+                obj['color'] = "RGB(0, 255, 0)"; // green
+              } else if (Math.abs(item.value - minValue[byRow]) <= 1 && minValue[byRow] < 10) {
+                obj['color'] = "RGB(0, 255, 0)"; // green
               } else if (currentRelation <= 1.05) {
                 obj['color'] = "RGB(255, 0, 0, 0.5)"; // pink
               } else if (currentRelation <= 5) {
