@@ -10,8 +10,8 @@ services:
       - vuejs
       - hugo
     ports:
-      - 80:80
-      - 443:443
+      - ${NGINX_LISTEN_HTTP_PORT}:80
+      - ${NGINX_LISTEN_HTTPS_PORT}:443
     restart: always
     # put HOSTNAME to .env
     environment:
@@ -25,13 +25,15 @@ services:
       - ./backend/:/backend/:ro
       - ./site/public/:/site/:ro
       - ./logs/:/var/log/nginx/:rw
+
   php:
     container_name: benchmarks_php
-    image: php:7-fpm
+    image: php:8-fpm
     restart: always
     volumes:
       - ./backend:/backend/:ro
       - ./backend/php_memory_limit.ini:/usr/local/etc/php/conf.d/php_memory_limit.ini:ro
+
   vuejs:
     depends_on:
       - hugo
@@ -42,6 +44,7 @@ services:
       - ./site/public/:/site/:rw
       - .env:/app/.env:ro
     command: bash -c "cd /app && npm install && npm run build && cp -r /app/dist/* /site/"
+
   hugo:
     container_name: benchmarks_hugo
     image: klakegg/hugo:0.68.3-ext
@@ -49,16 +52,19 @@ services:
       - ./site/:/src:rw
     environment:
       - HUGO_DESTINATION=/src/public
+
   db:
     container_name: benchmarks_db
-    build:
-      context: ./db/
+    image: manticoresearch/manticore:6.0.2-extra2
     restart: always
+    environment:
+      - EXTRA=1
     volumes:
       - ./db/data:/var/lib/manticore
     # commment out the below if you don't need Manticore to be accessible locally at port 19306, it's safe the other containers will still be able to access it
     ports:
       - "127.0.0.1:19306:9306"
+
   auth:
     container_name: benchmarks_auth
     image: quay.io/dtan4/nginx-basic-auth-proxy:latest

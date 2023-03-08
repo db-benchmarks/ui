@@ -1,4 +1,4 @@
-/* Copyright (C) 2022 Manticore Software Ltd
+/* Copyright (C) 2023 Manticore Software Ltd
 * You may use, distribute and modify this code under the
 * terms of the AGPLv3 license.
 *
@@ -8,6 +8,7 @@
 <template>
 
   <div id="app">
+    <Toast v-bind:error="errorMessage"></Toast>
     <div class="container">
       <div class="row">
         <div class="col-12 text-left">
@@ -127,6 +128,7 @@ import QueryInfo from "@/components/QueryInfo";
 import JQuery from 'jquery'
 import QueryDiff from "@/components/QueryDiff";
 import DatasetInfo from "./components/DatasetInfo";
+import Toast from "@/components/Toast.vue";
 
 export default {
   name: 'App',
@@ -137,13 +139,15 @@ export default {
     TestInfo,
     ButtonGroup,
     EngineGroup,
-    Table
+    Table,
+    Toast
   },
   data() {
     return {
       engines: [],
       engineGroups: {},
       results: [],
+      errorMessage: "",
       filteredResults: [],
       tests: [],
       testsInfo: [],
@@ -163,21 +167,27 @@ export default {
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
       engineInQueryInfo: null,
       engineInDatasetInfo: null,
+      apiCallTimeoutMs: 20000
     }
   },
-  created() {
-    axios.get(this.getServerUrl + "/api").then(response => {
-      this.results = response.data.result.data;
-      this.tests = response.data.result.tests;
-      this.engines = response.data.result.engines;
-      this.testsInfo = response.data.result.testsInfo;
-      this.shortServerInfo = response.data.result.shortServerInfo;
-      this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
-      this.parseUrl();
-      this.updateMemory();
-      this.parseUrl();
-      this.applySelection(false);
-    });
+  created: function() {
+    axios
+        .get(this.getServerUrl + "/api", {timeout: this.apiCallTimeoutMs})
+        .then(response => {
+          this.results = response.data.result.data;
+          this.tests = response.data.result.tests;
+          this.engines = response.data.result.engines;
+          this.testsInfo = response.data.result.testsInfo;
+          this.shortServerInfo = response.data.result.shortServerInfo;
+          this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
+          this.parseUrl();
+          this.updateMemory();
+          this.parseUrl();
+          this.applySelection(false);
+        })
+        .catch(error => {
+          this.showToast(error.message);
+        });
   },
   watch: {
     queryInfo: function () {
@@ -196,17 +206,25 @@ export default {
           this.parsedQueryInfo[tab] = this.queryInfo[tab];
         }
       }
-      JQuery('#modal-query-info').modal('show');
     }
   },
   methods: {
+    showToast(error) {
+      this.errorMessage = error;
+      JQuery('.toast').toast({autohide:false}).toast('show')
+    },
     showDatasetInfo(engine) {
       this.datasetInfo['info'] = {};
-      axios.get(this.getServerUrl + '/api?dataset_info=1&id=' + this.compareIds[0][engine]).then(response => {
-        this.datasetInfo = response.data.result;
-        this.engineInDatasetInfo = engine;
-        JQuery('#modal-dataset-info').modal('show');
-      })
+      axios
+          .get(this.getServerUrl + '/api?dataset_info=1&id=' + this.compareIds[0][engine], {timeout: this.apiCallTimeoutMs})
+          .then(response => {
+            this.datasetInfo = response.data.result;
+            this.engineInDatasetInfo = engine;
+            JQuery('#modal-dataset-info').modal('show');
+          })
+          .catch(error => {
+            this.showToast(error.message)
+          })
     },
     showInfo(row, id) {
 
@@ -218,16 +236,24 @@ export default {
       this.engineInQueryInfo = engineName;
       let compareId = this.compareIds[row][engineName];
 
-      axios.get(this.getServerUrl + '/api?info=1&id=' + compareId).then(response => {
-        this.queryInfo = response.data.result;
-      })
+      axios.get(this.getServerUrl + '/api?info=1&id=' + compareId, {timeout: this.apiCallTimeoutMs})
+          .then(response => {
+            this.queryInfo = response.data.result;
+          })
+          .catch(error => {
+            this.showToast(error.message)
+          })
     },
     showDiff(row) {
       let ids = Object.values(this.compareIds[row]);
-      axios.get(this.getServerUrl + "/api?compare=1&id1=" + ids[0] + "&id2=" + ids[1]).then(response => {
-        this.diff = response.data.result;
-        JQuery('#modal-query-diff').modal('show');
-      })
+      axios.get(this.getServerUrl + "/api?compare=1&id1=" + ids[0] + "&id2=" + ids[1], {timeout: this.apiCallTimeoutMs})
+          .then(response => {
+            this.diff = response.data.result;
+            JQuery('#modal-query-diff').modal('show');
+          })
+          .catch(error => {
+            this.showToast(error.message)
+          })
     },
     parseFullServerInfo(fullServerInfo) {
       let parsed = {}
