@@ -1,4 +1,4 @@
-/* Copyright (C) 2022 Manticore Software Ltd
+/* Copyright (C) 2023 Manticore Software Ltd
 * You may use, distribute and modify this code under the
 * terms of the AGPLv3 license.
 *

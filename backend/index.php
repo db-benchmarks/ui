@@ -1,6 +1,6 @@
 <?php
 
-/* Copyright (C) 2022 Manticore Software Ltd
+/* Copyright (C) 2023 Manticore Software Ltd
 * You may use, distribute and modify this code under the
 * terms of the AGPLv3 license.
 *
@@ -136,13 +136,13 @@ class DataGetter {
 
 				if ( mb_strlen( $item ) >= 24 ) {
 					$words  = preg_split( '/(?<=[^\p{L}\p{N}])/u', $item, - 1, PREG_SPLIT_NO_EMPTY );
-					$result = ""; // Переменная для результирующей строки
+					$result = "";
 					foreach ( $words as $word ) {
-						if ( strlen( $word ) > 24 ) { // Если длина слова больше 28 символов
-							$subwords = str_split( $word, 24 ); // Разбиваем слово на подстроки длиной 28 символов
+						if ( strlen( $word ) > 24 ) {
+							$subwords = str_split( $word, 24 );
 							$result   .= implode( " ", $subwords );
 						} else {
-							$result .= $word; // Добавляем слово к результирующей строке
+							$result .= $word;
 						}
 					}
 					$item = $result;
