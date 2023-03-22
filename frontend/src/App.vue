@@ -239,6 +239,7 @@ export default {
       axios.get(this.getServerUrl + '/api?info=1&id=' + compareId, {timeout: this.apiCallTimeoutMs})
           .then(response => {
             this.queryInfo = response.data.result;
+            JQuery('#modal-query-info').modal('show');
           })
           .catch(error => {
             this.showToast(error.message)

@@ -173,13 +173,18 @@ class DataGetter {
 		file_put_contents( $rowSecondFileName, $rowSecond['Response'] . "\n" );
 
 
-		$command = 'diff -U 1000000 -u ' . $rowFirstFileName . ' ' . $rowSecondFileName;
+		$command = 'diff -U 1000000 -u "' . $rowFirstFileName . '" "' . $rowSecondFileName.'"';
 		$output  = [];
 		exec( $command, $output, $exitCode );
 		if ( $exitCode <= 1 ) {
 			if ( $output !== [] ) {
 				$compare['Response'] = implode( "\n",
 					str_replace( DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR, "", $output ) );
+			} else {
+				$compare['Response'] = "--- ".$rowFirstFileName."\n".
+				                       "+++ ".$rowSecondFileName."\n".
+				                       "@@ -0 +0 @@\n".
+				                       $rowFirst['Response'];
 			}
 		} else {
 			$this->printResponse( [ 'message' => 'Error during diff generation' ], self::STATUS_ERROR, 400 );
