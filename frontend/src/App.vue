@@ -147,6 +147,7 @@ export default {
       engines: [],
       engineGroups: {},
       results: [],
+      initData: {},
       errorMessage: "",
       filteredResults: [],
       tests: [],
@@ -170,20 +171,21 @@ export default {
       apiCallTimeoutMs: 20000
     }
   },
-  created: function() {
+  created: function () {
     axios
-        .get(this.getServerUrl + "/api", {timeout: this.apiCallTimeoutMs})
+        .get(this.getServerUrl + this.getApiPath, {timeout: this.apiCallTimeoutMs})
         .then(response => {
-          this.results = response.data.result.data;
-          this.tests = response.data.result.tests;
-          this.engines = response.data.result.engines;
-          this.testsInfo = response.data.result.testsInfo;
-          this.shortServerInfo = response.data.result.shortServerInfo;
-          this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
-          this.parseUrl();
-          this.updateMemory();
-          this.parseUrl();
-          this.applySelection(false);
+          this.init(response.data.result)
+//           this.results = response.data.result.data;
+//           this.tests = response.data.result.tests;
+//           this.engines = response.data.result.engines;
+//           this.testsInfo = response.data.result.testsInfo;
+//           this.shortServerInfo = response.data.result.shortServerInfo;
+//           this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
+//           this.parseUrl();
+//           this.updateMemory();
+//           this.parseUrl();
+//           this.applySelection(false);
         })
         .catch(error => {
           this.showToast(error.message);
@@ -209,14 +211,31 @@ export default {
     }
   },
   methods: {
+    init(data) {
+      this.initData = data;
+
+      for (let testName of Object.keys(data)) {
+        let row = {};
+        row[testName] = 0
+        this.tests.push(row)
+      }
+
+      if (!this.getSelectionFromUrl('tests')){
+        let randomSelection = Math.floor(Math.random() * this.tests.length)
+        for (let index in this.tests[randomSelection]){
+          this.tests[randomSelection][index] = 1;
+        }
+      }
+
+    },
     showToast(error) {
       this.errorMessage = error;
-      JQuery('.toast').toast({autohide:false}).toast('show')
+      JQuery('.toast').toast({autohide: false}).toast('show')
     },
     showDatasetInfo(engine) {
       this.datasetInfo['info'] = {};
       axios
-          .get(this.getServerUrl + '/api?dataset_info=1&id=' + this.compareIds[0][engine], {timeout: this.apiCallTimeoutMs})
+          .get(this.getServerUrl + this.getApiPath + '?dataset_info=1&id=' + this.compareIds[0][engine], {timeout: this.apiCallTimeoutMs})
           .then(response => {
             this.datasetInfo = response.data.result;
             this.engineInDatasetInfo = engine;
@@ -236,7 +255,7 @@ export default {
       this.engineInQueryInfo = engineName;
       let compareId = this.compareIds[row][engineName];
 
-      axios.get(this.getServerUrl + '/api?info=1&id=' + compareId, {timeout: this.apiCallTimeoutMs})
+      axios.get(this.getServerUrl + this.getApiPath + '?info=1&id=' + compareId, {timeout: this.apiCallTimeoutMs})
           .then(response => {
             this.queryInfo = response.data.result;
             JQuery('#modal-query-info').modal('show');
@@ -247,7 +266,7 @@ export default {
     },
     showDiff(row) {
       let ids = Object.values(this.compareIds[row]);
-      axios.get(this.getServerUrl + "/api?compare=1&id1=" + ids[0] + "&id2=" + ids[1], {timeout: this.apiCallTimeoutMs})
+      axios.get(this.getServerUrl + this.getApiPath + "?compare=1&id1=" + ids[0] + "&id2=" + ids[1], {timeout: this.apiCallTimeoutMs})
           .then(response => {
             this.diff = response.data.result;
             JQuery('#modal-query-diff').modal('show');
@@ -292,6 +311,9 @@ export default {
 
       this.queries = result;
     },
+    /**
+     * @deprecated
+     */
     updateMemory() {
       let memory = [];
       for (let test in this.tests) {
@@ -439,9 +461,23 @@ export default {
         }
       }
     },
+    getSelectionFromUrl(type) {
+      const urlParams = this.getUrlParams();
 
+      let selected = false;
+      if (['cache', 'engines', 'tests', 'memory'].includes(type)) {
+        let selection = urlParams.get(type);
+        if (selection != null && selection !== "") {
+          this.setSelection(selection, this[type], type)
+          selected = true;
+        }
+      } else {
+        throw new Error('Can\'t get selection of non allowed parameter');
+      }
+
+      return selected;
+    },
     setSelection(urlData, section) {
-
       // Clean section
       section.forEach((row) => {
         for (let id in row) {
@@ -514,6 +550,13 @@ export default {
         serverUrl = '';
       }
       return serverUrl;
+    },
+    getApiPath() {
+      let apiPath = process.env.VUE_APP_API_PATH;
+      if (apiPath === undefined) {
+        apiPath = '/api';
+      }
+      return apiPath;
     },
     prepareCacheForTable() {
       let result = [];

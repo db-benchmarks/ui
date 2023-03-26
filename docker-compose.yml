@@ -55,7 +55,7 @@ services:
 
   db:
     container_name: benchmarks_db
-    image: manticoresearch/manticore:6.0.2-extra2
+    image: manticoresearch/manticore:6.0.4
     restart: always
     environment:
       - EXTRA=1
@@ -64,6 +64,7 @@ services:
     # commment out the below if you don't need Manticore to be accessible locally at port 19306, it's safe the other containers will still be able to access it
     ports:
       - "127.0.0.1:19306:9306"
+      - "127.0.0.1:19308:9308"
 
   auth:
     container_name: benchmarks_auth
