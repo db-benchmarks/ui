@@ -279,14 +279,22 @@ class DataGetter {
     }
 
 
-    public function getTest() {
+    public function getTest($testName, $memory): bool
+    {
+	    $sanitizedTestName = preg_replace('[^a-zA-Z0-9_]', '', $testName);
+	    if (mb_strlen($sanitizedTestName)>20){
+            $this->printResponse( "Test name can't be longer than 20 characters", self::STATUS_ERROR );
+        }
+
         $query
             = "SELECT " .
             "    id, test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), " .
             "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error), " .
             "    test_info, server_info " .
             "FROM results " .
-            "WHERE error is NULL and query_timeout = 0 " .
+            "WHERE error is NULL AND query_timeout = 0 " .
+            "    AND test_name = '" . $sanitizedTestName ."'".
+            "    AND memory = " . (int) $memory . " ".
             "GROUP BY test_name, engine_name, type, original_query, memory " .
             "ORDER BY original_query ASC " .
             "LIMIT 1000000 " .
@@ -491,8 +499,8 @@ if ( isset( $_GET['compare'] ) && isset( $_GET['id1'] ) && isset( $_GET['id2'] )
 	$dg->getDatasetInfo( (int) $_GET['id'] );
 } elseif ( ! empty( $_GET['info'] ) && isset( $_GET['id'] ) ) {
 	$dg->getRow( (int) $_GET['id'] );
-} elseif(!empty($_GET['test_name']) && !empty($_GET['memory']) && !empty($_GET['engine'])) {
-    $dg->getTest($_GET['test_name'], $_GET['memory'], $_GET['engine']);
+} elseif(!empty($_GET['test_name']) && !empty($_GET['memory'])) {
+    $dg->getTest($_GET['test_name'], $_GET['memory']);
 } else {
 	$dg->init();
 }
