@@ -10,8 +10,7 @@
     <template v-for="record in items">
       <button
           v-for="(selected, name) in record" :key="name" type="button"
-          v-bind:class="[{ 'btn-success': selected }, 'btn-secondary', isActive(name, selected)?'d-none':'']"
-          :disabled="isActive(name, selected)"
+          v-bind:class="[{ 'btn-success': selected }, 'btn-secondary']"
           class="btn btn-sm" @click="click(record)">
         {{
           (capitalize
@@ -41,10 +40,6 @@ export default {
       type: Boolean,
       required: true
     },
-    activeItems: {
-      type: Object,
-      required: false
-    }
   },
   methods: {
     click(item) {
@@ -63,10 +58,6 @@ export default {
           this.items[item][row] = 0
         }
       }
-    },
-    isActive(name, selected) {
-      if (selected) return false;
-      return this.activeItems !== undefined && this.activeItems[name] === undefined;
     }
   }
 }
@@ -79,19 +70,6 @@ button {
   margin-bottom: 3px;
   border-width: 2px;
 }
-
-
-/*.btn-group button:not(:last-child){*/
-/*  !*margin-right: 1px;*!*/
-/*  !*border-right: 2px solid #227596;*!*/
-/*  box-shadow: inset 0 0 20px #0f822d;*/
-/*}*/
-
-/*.btn-group button:not(.btn-success){*/
-/*  !*margin-right: 1px;*!*/
-/*  !*border-right: 2px solid #227596;*!*/
-/*  box-shadow: inset 0 0 20px #585858;*/
-/*}*/
 
 .btn-group.special {
   display: flex;

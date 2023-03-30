@@ -231,24 +231,22 @@ class DataGetter {
 		];
 	}
 
-	public function query() {
-		$query
-			= "SELECT " .
-			  "    id, test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), " .
-			  "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error), " .
-			  "    test_info, server_info " .
-			  "FROM results " .
-			  "WHERE error is NULL and query_timeout = 0 " .
-			  "GROUP BY test_name, engine_name, type, original_query, memory " .
-			  "ORDER BY original_query ASC " .
-			  "LIMIT 1000000 " .
-			  "OPTION max_matches=100000";
+	public function init(): bool
+    {
+
+	    $query = "SELECT ".
+            "         id, test_name, memory, engine_name, type ".
+            "     FROM results ".
+            "     WHERE error is NULL and query_timeout = 0 " .
+            "     GROUP BY test_name, memory, engine_name, type ".
+            "     LIMIT 1000000 ".
+            "     OPTION max_matches=100000";
 
 		// the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
 		//$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
 		$result = $this->request( $query );
 
-		$result = $this->perpareResponse( $result );
+		$result = $this->prepareInitResponse($result );
 		if ( ! $result ) {
 			$this->printResponse( "Error while preparing data", self::STATUS_ERROR );
 		}
@@ -258,7 +256,65 @@ class DataGetter {
 		return true;
 	}
 
-	private function perpareResponse( $result ) {
+	private function prepareInitResponse($data): bool|array
+    {
+        $data = json_decode($data, true);
+        if($data !== false){
+
+            $results = [];
+            if(isset($data['hits']['hits'])){
+                foreach ($data['hits']['hits'] as $row){
+                    $row = $row['_source'];
+                    $results[$row['test_name']][$row['memory']][] = $row['engine_name'] . ( $row['type'] ? '_' . $row['type'] : '' );
+                }
+            }
+
+            if ($results !== []){
+                return  $results;
+            }
+
+        }
+
+	    return false;
+    }
+
+
+    public function getTest($testName, $memory): bool
+    {
+	    $sanitizedTestName = preg_replace('[^a-zA-Z0-9_]', '', $testName);
+	    if (mb_strlen($sanitizedTestName)>20){
+            $this->printResponse( "Test name can't be longer than 20 characters", self::STATUS_ERROR );
+        }
+
+        $query
+            = "SELECT " .
+            "    id, test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), " .
+            "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error), " .
+            "    test_info, server_info " .
+            "FROM results " .
+            "WHERE error is NULL AND query_timeout = 0 " .
+            "    AND test_name = '" . $sanitizedTestName ."'".
+            "    AND memory = " . (int) $memory . " ".
+            "GROUP BY test_name, engine_name, type, original_query, memory " .
+            "ORDER BY original_query ASC " .
+            "LIMIT 1000000 " .
+            "OPTION max_matches=100000";
+
+        // the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
+        //$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
+        $result = $this->request( $query );
+
+        $result = $this->prepareTestResponse($result );
+        if ( ! $result ) {
+            $this->printResponse( "Error while preparing data", self::STATUS_ERROR );
+        }
+
+        $this->printResponse( $result );
+
+        return true;
+    }
+
+	private function prepareTestResponse( $result ) {
 		$result = json_decode( $result, true );
 		if ( ! json_last_error() ) {
 			$data = [];
@@ -443,6 +499,8 @@ if ( isset( $_GET['compare'] ) && isset( $_GET['id1'] ) && isset( $_GET['id2'] )
 	$dg->getDatasetInfo( (int) $_GET['id'] );
 } elseif ( ! empty( $_GET['info'] ) && isset( $_GET['id'] ) ) {
 	$dg->getRow( (int) $_GET['id'] );
+} elseif(!empty($_GET['test_name']) && !empty($_GET['memory'])) {
+    $dg->getTest($_GET['test_name'], $_GET['memory']);
 } else {
-	$dg->query();
+	$dg->init();
 }

@@ -13,7 +13,7 @@
           <div @click="checkChildIsSingle(name, value, '#collapse-'+name)"
                :class="'d-flex engine-block justify-content-center'+ (isAnyActive(name) ? ' active-engine' : '')">
             <img :src="require(`@/assets/logos/${name}.svg`)">
-            <span class="engine-badge">{{ getActiveItemsCount(value) }}</span>
+            <span class="engine-badge">{{ getSelectedItemsCount(value) }}</span>
           </div>
 
         </div>
@@ -27,7 +27,6 @@
           <ButtonGroup v-bind:items="filterItems(name)"
                        v-bind:switch="false"
                        v-bind:capitalize="false"
-                       v-bind:active-items="activeItems"
                        v-on:changed="changed()"/>
 
         </div>
@@ -52,10 +51,6 @@ export default {
     items: {
       type: Array,
       required: true
-    },
-    activeItems: {
-      type: Object,
-      required: false
     }
   },
   methods: {
@@ -79,12 +74,12 @@ export default {
       // eslint-disable-next-line no-unused-vars
       const filtered = asArray.filter(([key, val]) => {
         let fullName = Object.keys(val)[0];
-        return fullName.indexOf(groupName) === 0 && this.activeItems[fullName] === 1
+        return fullName.indexOf(groupName) === 0
       });
 
       return Object.fromEntries(filtered);
     },
-    getActiveItemsCount(group) {
+    getSelectedItemsCount(group) {
       return Object.values(group).filter((value => value === true)).length + '/' + Object.values(group).length;
     },
     isAnyActive(name) {

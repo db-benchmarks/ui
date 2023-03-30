@@ -9,10 +9,12 @@
 
   <div id="app">
     <Toast v-bind:error="errorMessage"></Toast>
+    <Preloader v-bind:visible="preloaderVisible"></Preloader>
     <div class="container">
       <div class="row">
         <div class="col-12 text-left">
-          <img class="d-block mb-1" src="./assets/logo.svg" style="margin-left: auto; margin-right: auto; width=50%;">
+          <img alt="logo" class="d-block mb-1" src="./assets/logo.svg"
+               style="margin-left: auto; margin-right: auto; width:50%;">
           <h4 align="center" dir="auto">
             <a href="/about/">About</a> •
             <a href="/principles/">Testing principles</a> •
@@ -51,7 +53,7 @@
           <ButtonGroup v-bind:items="tests"
                        v-bind:switch="true"
                        v-bind:capitalize="false"
-                       v-on:changed="updateMemory(); applySelection(true, true);"/>
+                       v-on:changed="cleanUrl();fillMemory();"/>
         </div>
       </div>
       <div class="row mt-2">
@@ -67,8 +69,7 @@
           <h4>Engines</h4>
           <EngineGroup v-bind:groups="engineGroups"
                        v-bind:items="engines"
-                       v-bind:active-items="supportedEngines"
-                       v-on:changed="applySelection(false)">
+                       v-on:changed="fillEngineGroups();applySelection(false)">
           </EngineGroup>
         </div>
       </div>
@@ -79,7 +80,7 @@
                        v-bind:switch="true"
                        v-bind:capitalize="false"
                        v-bind:append="'MB'"
-                       v-on:changed="applySelection(false, true);"/>
+                       v-on:changed="fillEngines()"/>
         </div>
 
         <div class="col-3">
@@ -129,10 +130,12 @@ import JQuery from 'jquery'
 import QueryDiff from "@/components/QueryDiff";
 import DatasetInfo from "./components/DatasetInfo";
 import Toast from "@/components/Toast.vue";
+import Preloader from "./components/Preloader";
 
 export default {
   name: 'App',
   components: {
+    Preloader,
     DatasetInfo,
     QueryDiff,
     QueryInfo,
@@ -146,7 +149,8 @@ export default {
     return {
       engines: [],
       engineGroups: {},
-      results: [],
+      results: {},
+      initData: {},
       errorMessage: "",
       filteredResults: [],
       tests: [],
@@ -156,7 +160,7 @@ export default {
       memory: [],
       queries: [],
       checksums: {},
-      supportedEngines: {},
+      availableEngines: [],
       resultsCount: 0,
       selectedTest: 0,
       queryInfo: {},
@@ -167,26 +171,21 @@ export default {
       cache: [{"fastest": 0}, {"slowest": 0}, {"fast_avg": 1}],
       engineInQueryInfo: null,
       engineInDatasetInfo: null,
-      apiCallTimeoutMs: 20000
+      apiCallTimeoutMs: 20000,
+      preloaderVisible: false,
     }
   },
-  created: function() {
+  created: function () {
+    this.preloaderVisible = true;
     axios
-        .get(this.getServerUrl + "/api", {timeout: this.apiCallTimeoutMs})
+        .get(this.getServerUrl + this.getApiPath, {timeout: this.apiCallTimeoutMs})
         .then(response => {
-          this.results = response.data.result.data;
-          this.tests = response.data.result.tests;
-          this.engines = response.data.result.engines;
-          this.testsInfo = response.data.result.testsInfo;
-          this.shortServerInfo = response.data.result.shortServerInfo;
-          this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
-          this.parseUrl();
-          this.updateMemory();
-          this.parseUrl();
-          this.applySelection(false);
+          this.init(response.data.result);
+          this.preloaderVisible = false;
         })
         .catch(error => {
           this.showToast(error.message);
+          this.preloaderVisible = false;
         });
   },
   watch: {
@@ -209,105 +208,72 @@ export default {
     }
   },
   methods: {
-    showToast(error) {
-      this.errorMessage = error;
-      JQuery('.toast').toast({autohide:false}).toast('show')
+    init(data) {
+      this.initData = data;
+
+      // Test list init
+      for (let testName of Object.keys(data)) {
+        let row = {};
+        row[testName] = 0
+        this.tests.push(row)
+      }
+
+      this.shuffleSelectionIfNonSelected('tests');
+
+      this.fillMemory();
     },
-    showDatasetInfo(engine) {
-      this.datasetInfo['info'] = {};
+
+    getTestData(clearQueries = false) {
+      this.preloaderVisible = true;
       axios
-          .get(this.getServerUrl + '/api?dataset_info=1&id=' + this.compareIds[0][engine], {timeout: this.apiCallTimeoutMs})
+          .get(this.getServerUrl + this.getApiPath +
+              '?test_name=' + this.getSelectedRow(this.tests)[0] +
+              '&memory=' + this.getSelectedRow(this.memory)[0],
+              {timeout: this.apiCallTimeoutMs})
           .then(response => {
-            this.datasetInfo = response.data.result;
-            this.engineInDatasetInfo = engine;
-            JQuery('#modal-dataset-info').modal('show');
+            this.results = response.data.result.data;
+            this.testsInfo = response.data.result.testsInfo;
+            this.shortServerInfo = response.data.result.shortServerInfo;
+            this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
+            this.applySelection(clearQueries);
+            this.preloaderVisible = false;
           })
           .catch(error => {
-            this.showToast(error.message)
-          })
+            this.showToast(error.message);
+            this.preloaderVisible = false;
+          });
     },
-    showInfo(row, id) {
 
-      let selectedEngines = this.getSelectedRow(this.engines)
-      let grouppedCount = this.prepareCacheForTable.length / selectedEngines.length;
-      let index = Math.ceil(id / grouppedCount) - 1;
-
-      let engineName = selectedEngines[index];
-      this.engineInQueryInfo = engineName;
-      let compareId = this.compareIds[row][engineName];
-
-      axios.get(this.getServerUrl + '/api?info=1&id=' + compareId, {timeout: this.apiCallTimeoutMs})
-          .then(response => {
-            this.queryInfo = response.data.result;
-            JQuery('#modal-query-info').modal('show');
-          })
-          .catch(error => {
-            this.showToast(error.message)
-          })
-    },
-    showDiff(row) {
-      let ids = Object.values(this.compareIds[row]);
-      axios.get(this.getServerUrl + "/api?compare=1&id1=" + ids[0] + "&id2=" + ids[1], {timeout: this.apiCallTimeoutMs})
-          .then(response => {
-            this.diff = response.data.result;
-            JQuery('#modal-query-diff').modal('show');
-          })
-          .catch(error => {
-            this.showToast(error.message)
-          })
-    },
-    parseFullServerInfo(fullServerInfo) {
-      let parsed = {}
-      for (let testInfo in fullServerInfo) {
-        parsed[testInfo] = JSON.parse(fullServerInfo[testInfo]);
-      }
-      return parsed;
-    },
-    unsetUnavailableEngines() {
-      for (let engineIndex in this.engines) {
-        let engineName = Object.keys(this.engines[engineIndex])[0];
-        if (this.supportedEngines[engineName] === undefined) {
-          this.engines[engineIndex][engineName] = 0;
-        }
-      }
-    },
-    fillSupportedEngines(data) {
-      this.supportedEngines = {};
-      for (let dataKey in data) {
-        for (let engine in data[dataKey]) {
-          if (engine === 'query') {
-            continue;
-          }
-          this.supportedEngines[engine] = 1;
-        }
-      }
-    },
-    fillCheckedQueries(data) {
-
-      let result = [];
-
-      for (let selectedQuery in data) {
-        result[selectedQuery] = true;
-      }
-
-      this.queries = result;
-    },
-    updateMemory() {
-      let memory = [];
-      for (let test in this.tests) {
-        for (let name in this.tests[test]) {
-          if (this.tests[test][name]) {
-
-            for (let memValue in this.results[name]) {
-              let obj = {};
-              obj[memValue] = 0;
-              memory.push(obj)
+    shuffleSelectionIfNonSelected(type) {
+      if (['cache', 'engines', 'tests', 'memory'].includes(type)) {
+        let selection = this.getSelectionFromUrl(type);
+        if (!selection) {
+          let randomSelection = Math.floor(Math.random() * this[type].length)
+          for (let index in this[type][randomSelection]) {
+            if (this[type][randomSelection][index] === 1) {
+              this.shuffleSelectionIfNonSelected(type);
+            } else {
+              this[type][randomSelection][index] = 1;
             }
           }
         }
+      } else {
+        throw new Error('Can\'t shuffle non existing selection');
+      }
+    },
+    fillMemory() {
+      let selectedTest = this.getSelectedRow(this.tests)[0];
+
+      let memory = [];
+
+      for (let memValue in this.initData[selectedTest]) {
+        let obj = {};
+        obj[memValue] = 0;
+        memory.push(obj)
       }
 
-      let sortedMemory = memory.sort(function (a, b) {
+
+      this.memory = memory.sort(function (a, b) {
         if (Object.keys(a)[0] < Object.keys(b)[0]) {
           return 1;
         }
@@ -318,17 +284,130 @@ export default {
         return 0;
       });
 
-      sortedMemory[0][Object.keys(sortedMemory[0])[0]] = 1;
-      this.memory = sortedMemory;
+      this.shuffleSelectionIfNonSelected('memory');
+      this.fillEngines();
     },
-    applySelection(clearQueries = false, unsetUnsupported = false) {
+
+    fillEngines() {
+      let selectedTest = this.getSelectedRow(this.tests)[0];
+      let selectedMemory = this.getSelectedRow(this.memory)[0];
+      let engines = [];
+      this.availableEngines = this.initData[selectedTest][selectedMemory];
+      for (let engineName of this.availableEngines) {
+        let obj = {};
+        obj[engineName] = 0;
+        engines.push(obj)
+      }
+
+      this.engines = engines;
+      this.shuffleSelectionIfNonSelected('engines');
+      this.shuffleSelectionIfNonSelected('engines');
+      this.fillEngineGroups();
+      this.getTestData();
+    },
+
+    fillEngineGroups() {
+      this.engineGroups = {};
+      for (let engineFullName of this.availableEngines) {
+
+        let engineName = engineFullName.split('_');
+        let selected = 0;
+
+        if (this.engineGroups[engineName[0]] === undefined) {
+          this.engineGroups[engineName[0]] = {};
+        }
+
+        for (let row of this.engines) {
+          if (row[engineFullName] !== undefined) {
+            selected = (row[engineFullName] !== 0 && row[engineFullName] !== false);
+          }
+        }
+        this.engineGroups[engineName[0]][engineFullName] = selected;
+      }
+    },
+
+    showToast(error) {
+      this.errorMessage = error;
+      JQuery('.toast').toast({autohide: false}).toast('show')
+    },
+
+    showDatasetInfo(engine) {
+      this.datasetInfo['info'] = {};
+      this.preloaderVisible = true;
+      axios
+          .get(this.getServerUrl + this.getApiPath + '?dataset_info=1&id=' + this.compareIds[0][engine], {timeout: this.apiCallTimeoutMs})
+          .then(response => {
+            this.datasetInfo = response.data.result;
+            this.engineInDatasetInfo = engine;
+            JQuery('#modal-dataset-info').modal('show');
+            this.preloaderVisible = false;
+          })
+          .catch(error => {
+            this.showToast(error.message);
+            this.preloaderVisible = false;
+          })
+    },
+
+    showInfo(row, id) {
+
+      let selectedEngines = this.getSelectedRow(this.engines)
+      let grouppedCount = this.prepareCacheForTable.length / selectedEngines.length;
+      let index = Math.ceil(id / grouppedCount) - 1;
+
+      let engineName = selectedEngines[index];
+      this.engineInQueryInfo = engineName;
+      let compareId = this.compareIds[row][engineName];
+      this.preloaderVisible = true;
+      axios.get(this.getServerUrl + this.getApiPath + '?info=1&id=' + compareId, {timeout: this.apiCallTimeoutMs})
+          .then(response => {
+            this.queryInfo = response.data.result;
+            JQuery('#modal-query-info').modal('show');
+            this.preloaderVisible = false;
+          })
+          .catch(error => {
+            this.showToast(error.message);
+            this.preloaderVisible = false;
+          })
+    },
+
+    showDiff(row) {
+      let ids = Object.values(this.compareIds[row]);
+      this.preloaderVisible = true;
+      axios.get(this.getServerUrl + this.getApiPath + "?compare=1&id1=" + ids[0] + "&id2=" + ids[1], {timeout: this.apiCallTimeoutMs})
+          .then(response => {
+            this.diff = response.data.result;
+            JQuery('#modal-query-diff').modal('show');
+            this.preloaderVisible = false;
+          })
+          .catch(error => {
+            this.showToast(error.message);
+            this.preloaderVisible = false;
+          })
+    },
+
+    parseFullServerInfo(fullServerInfo) {
+      let parsed = {}
+      for (let testInfo in fullServerInfo) {
+        parsed[testInfo] = JSON.parse(fullServerInfo[testInfo]);
+      }
+      return parsed;
+    },
+
+    fillCheckedQueries(data) {
+
+      let result = [];
+
+      for (let selectedQuery in data) {
+        result[selectedQuery] = true;
+      }
+
+      this.queries = result;
+    },
+
+    applySelection(clearQueries = true) {
       this.checksums = {};
       this.compareIds = [];
       let data = this.results[this.getSelectedRow(this.tests)[0]][this.getSelectedRow(this.memory)[0]];
-      this.fillSupportedEngines(data);
-      if (unsetUnsupported) {
-        this.unsetUnavailableEngines();
-      }
 
       let results = [];
       let selectedEngines = this.getSelectedRow(this.engines);
@@ -387,14 +466,14 @@ export default {
         this.modifyUrl();
       }
 
-      this.getSelectionsFromUrl();
+      this.getQuerySelectionsFromUrl();
 
 
       this.modifyUrl();
       this.resultsCount = results.length;
       this.filteredResults = results;
-      this.parseEnginesGroups();
     },
+
     modifyUrl() {
       const params = new URLSearchParams({
         cache: this.getSelectedRow(this.cache),
@@ -405,21 +484,17 @@ export default {
       });
       window.history.pushState("", "", "/?" + params.toString());
     },
+
+    cleanUrl() {
+      window.history.pushState("", "", "/");
+    },
+
     getUrlParams() {
       return new URLSearchParams(window.location.search);
     },
-    parseUrl() {
-      const urlParams = this.getUrlParams();
 
-      ['cache', 'engines', 'tests', 'memory'].forEach((row) => {
-        let selection = urlParams.get(row);
-        if (selection != null && selection !== "") {
-          this.setSelection(selection, this[row], row)
-        }
-      });
 
-    },
-    getSelectionsFromUrl() {
+    getQuerySelectionsFromUrl() {
       let urlQueries = this.getUrlParams().get('queries');
 
 
@@ -440,8 +515,24 @@ export default {
       }
     },
 
-    setSelection(urlData, section) {
+    getSelectionFromUrl(type) {
+      const urlParams = this.getUrlParams();
 
+      let selected = false;
+      if (['cache', 'engines', 'tests', 'memory'].includes(type)) {
+        let selection = urlParams.get(type);
+        if (selection != null && selection !== "") {
+          this.setSelection(selection, this[type], type)
+          selected = true;
+        }
+      } else {
+        throw new Error('Can\'t get selection of non allowed parameter');
+      }
+
+      return selected;
+    },
+
+    setSelection(urlData, section) {
       // Clean section
       section.forEach((row) => {
         for (let id in row) {
@@ -461,6 +552,7 @@ export default {
         });
       }
     },
+
     getSelectedRow(obj) {
       let result = [];
       for (let engine in obj) {
@@ -472,6 +564,7 @@ export default {
       }
       return result;
     },
+
     getSelectedQueries(obj) {
       let result = [];
       for (let row in obj) {
@@ -481,27 +574,6 @@ export default {
       }
       return result;
     },
-    parseEnginesGroups() {
-      this.engineGroups = {};
-      for (let engineFullName in this.supportedEngines) {
-
-        let engineName = engineFullName.split('_');
-
-
-        let selected = 0;
-
-        if (this.engineGroups[engineName[0]] === undefined) {
-          this.engineGroups[engineName[0]] = {};
-        }
-
-        for (let row of this.engines) {
-          if (row[engineFullName] !== undefined) {
-            selected = (row[engineFullName] !== 0 && row[engineFullName] !== false);
-          }
-        }
-        this.engineGroups[engineName[0]][engineFullName] = selected;
-      }
-    }
   },
   computed: {
     getYear() {
@@ -514,6 +586,13 @@ export default {
         serverUrl = '';
       }
       return serverUrl;
+    },
+    getApiPath() {
+      let apiPath = process.env.VUE_APP_API_PATH;
+      if (apiPath === undefined) {
+        apiPath = '/api';
+      }
+      return apiPath;
     },
     prepareCacheForTable() {
       let result = [];
