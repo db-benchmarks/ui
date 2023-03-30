@@ -22,8 +22,11 @@ export default {
 }
 </script>
 <style>
-.preloader{
-  width: 120px;
-  border: 1px solid black !important;
+.preloader {
+    width: 120px;
+    border: 1px solid #000!important
+    margin: 0px;
+    padding: 0px;
+    text-align: center;
 }
 </style>
