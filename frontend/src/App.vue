@@ -58,9 +58,9 @@
       </div>
       <div class="row mt-2">
         <div class="col">
-          <TestInfo v-bind:test-info="testsInfo[getSelectedRow(tests)]"
-                    v-bind:short-server-info="shortServerInfo[getSelectedRow(tests)]"
-                    v-bind:full-server-info="fullServerInfo[getSelectedRow(tests)]">
+          <TestInfo v-bind:test-info="testsInfo"
+                    v-bind:short-server-info="shortServerInfo"
+                    v-bind:full-server-info="fullServerInfo">
           </TestInfo>
         </div>
       </div>
@@ -225,16 +225,31 @@ export default {
 
     getTestData(clearQueries = false) {
       this.preloaderVisible = true;
+
+      let testName = this.getSelectedRow(this.tests)[0];
+
       axios
           .get(this.getServerUrl + this.getApiPath +
-              '?test_name=' + this.getSelectedRow(this.tests)[0] +
+              '?server_info=1&test_name=' + testName,
+              {timeout: this.apiCallTimeoutMs})
+          .then(response => {
+            this.testsInfo = response.data.result.testsInfo;
+            this.shortServerInfo = response.data.result.shortServerInfo;
+            this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
+            this.preloaderVisible = false;
+          })
+          .catch(error => {
+            this.showToast(error.message);
+            this.preloaderVisible = false;
+          });
+
+      axios
+          .get(this.getServerUrl + this.getApiPath +
+              '?test_name=' + testName +
               '&memory=' + this.getSelectedRow(this.memory)[0],
               {timeout: this.apiCallTimeoutMs})
           .then(response => {
             this.results = response.data.result.data;
-            this.testsInfo = response.data.result.testsInfo;
-            this.shortServerInfo = response.data.result.shortServerInfo;
-            this.fullServerInfo = this.parseFullServerInfo(response.data.result.fullServerInfo);
             this.applySelection(clearQueries);
             this.preloaderVisible = false;
           })
@@ -386,11 +401,7 @@ export default {
     },
 
     parseFullServerInfo(fullServerInfo) {
-      let parsed = {}
-      for (let testInfo in fullServerInfo) {
-        parsed[testInfo] = JSON.parse(fullServerInfo[testInfo]);
-      }
-      return parsed;
+      return JSON.parse(fullServerInfo);
     },
 
     fillCheckedQueries(data) {

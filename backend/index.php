@@ -278,22 +278,65 @@ class DataGetter {
 	    return false;
     }
 
-
-    public function getTest($testName, $memory): bool
+    public function getServerInfo($testName): bool
     {
-	    $sanitizedTestName = preg_replace('[^a-zA-Z0-9_]', '', $testName);
-	    if (mb_strlen($sanitizedTestName)>20){
+        $query = "SELECT".
+            "         id, test_name, test_info, server_info".
+            "     FROM results ".
+            "WHERE error is NULL AND query_timeout = 0 " .
+            "    AND test_name = '" . $this->sanitizeTestName($testName) ."' ".
+            "LIMIT 1";
+
+        $result = $this->request( $query );
+
+        $result = $this->prepareInfoResponse($result );
+        if ( ! $result ) {
+            $this->printResponse( "Error while preparing data", self::STATUS_ERROR );
+        }
+
+        $this->printResponse( $result );
+
+        return true;
+    }
+
+    private function prepareInfoResponse($data): bool|array
+    {
+        $data = json_decode($data, true);
+        if ($data !== false) {
+            if (isset($data['hits']['hits'])) {
+                foreach ($data['hits']['hits'] as $row) {
+                    $row = $row['_source'];
+
+                    return [
+                        'testsInfo' => $row['test_info'],
+                        'shortServerInfo' => $this->parseShortServerInfo($row['server_info']),
+                        'fullServerInfo' => $row['server_info'],
+                    ];
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function sanitizeTestName($testName){
+        $sanitizedTestName = preg_replace('[^a-zA-Z0-9_]', '', $testName);
+        if (mb_strlen($sanitizedTestName)>20){
             $this->printResponse( "Test name can't be longer than 20 characters", self::STATUS_ERROR );
         }
 
+        return $sanitizedTestName;
+    }
+
+    public function getTest($testName, $memory): bool
+    {
         $query
             = "SELECT " .
             "    id, test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), " .
-            "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error), " .
-            "    test_info, server_info " .
+            "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) " .
             "FROM results " .
             "WHERE error is NULL AND query_timeout = 0 " .
-            "    AND test_name = '" . $sanitizedTestName ."'".
+            "    AND test_name = '" . $this->sanitizeTestName($testName) ."'".
             "    AND memory = " . (int) $memory . " ".
             "GROUP BY test_name, engine_name, type, original_query, memory " .
             "ORDER BY original_query ASC " .
@@ -324,9 +367,14 @@ class DataGetter {
 			$memory  = [];
 
 			$testsInfo       = [];
-			$fullServerInfo  = [];
-			$shortServerInfo = [];
+
+			$queryId = null;
 			foreach ( $result['hits']['hits'] as $row ) {
+
+			    if($queryId === null){
+                    $queryId = $row['_id'];
+                }
+
 				$id                         = $row['_id'];
 				$row                        = $row['_source'];
 				$tests[ $row['test_name'] ] = 0;
@@ -365,13 +413,6 @@ class DataGetter {
 					'checksum' => $row['min(checksum)'],
 					'id'       => $id,
 				];
-
-				$testsInfo[ $row['test_name'] ] = $row['test_info'];
-
-				if ( ! isset( $fullServerInfo[ $row['test_name'] ] ) ) {
-					$fullServerInfo[ $row['test_name'] ]  = $row['server_info'];
-					$shortServerInfo[ $row['test_name'] ] = $this->parseShortServerInfo( $row['server_info'] );
-				}
 			}
 
 			ksort( $engines, SORT_STRING );
@@ -425,13 +466,12 @@ class DataGetter {
 
 
 			$data = [
+			    'queryId'         => $queryId,
 				'data'            => $data,
 				'tests'           => $sorted['tests'],
 				'engines'         => $sorted['engines'],
 				'memory'          => $sorted['memory'],
-				'testsInfo'       => $testsInfo,
-				'shortServerInfo' => $shortServerInfo,
-				'fullServerInfo'  => $fullServerInfo,
+				'testsInfo'       => $testsInfo
 			];
 
 			return $data;
@@ -501,6 +541,8 @@ if ( isset( $_GET['compare'] ) && isset( $_GET['id1'] ) && isset( $_GET['id2'] )
 	$dg->getRow( (int) $_GET['id'] );
 } elseif(!empty($_GET['test_name']) && !empty($_GET['memory'])) {
     $dg->getTest($_GET['test_name'], $_GET['memory']);
+} elseif(!empty($_GET['server_info']) && !empty($_GET['test_name'])){
+    $dg->getServerInfo($_GET['test_name']);
 } else {
 	$dg->init();
 }
