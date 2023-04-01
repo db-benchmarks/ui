@@ -15,8 +15,17 @@ class DataGetter {
 	const STATUS_SUCCESS = "success";
 	const STATUS_ERROR = "error";
 
-	private function printResponse( $data, string $status = self::STATUS_SUCCESS, int $code = 200 ) {
+	private $startTime;
+
+	public function __construct($startTime)
+    {
+        $this->startTime = $startTime;
+    }
+
+    private function printResponse( $data, string $status = self::STATUS_SUCCESS, int $code = 200 ) {
 		$result = [ 'status' => $status ];
+		$result['executionTime'] = microtime(true) - $this->startTime;
+
 		if ( $status === self::STATUS_ERROR ) {
 			if ( $code === 200 ) {
 				$code = 500;
@@ -532,7 +541,7 @@ class DataGetter {
 	}
 }
 
-$dg = new DataGetter();
+$dg = new DataGetter(microtime(true));
 if ( isset( $_GET['compare'] ) && isset( $_GET['id1'] ) && isset( $_GET['id2'] ) ) {
 	$dg->getDiff( (int) $_GET['id1'], (int) $_GET['id2'] );
 } elseif ( ! empty( $_GET['dataset_info'] ) && isset( $_GET['id'] ) ) {
