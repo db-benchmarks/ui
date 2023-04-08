@@ -51,7 +51,7 @@ class DataGetter {
 
 	private function request( $query ) {
 		$curl = curl_init();
-		curl_setopt( $curl, CURLOPT_URL, "http://localhost:19308/sql" );
+		curl_setopt( $curl, CURLOPT_URL, "http://db:9308/sql" );
 		curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1 );
 		curl_setopt( $curl, CURLOPT_POSTFIELDS, 'query=' . urlencode( $query ) );
 
