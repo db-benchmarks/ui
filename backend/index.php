@@ -51,7 +51,7 @@ class DataGetter {
 
 	private function request( $query ) {
 		$curl = curl_init();
-		curl_setopt( $curl, CURLOPT_URL, "http://db:9308/sql" );
+		curl_setopt( $curl, CURLOPT_URL, "http://localhost:19308/sql" );
 		curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1 );
 		curl_setopt( $curl, CURLOPT_POSTFIELDS, 'query=' . urlencode( $query ) );
 
@@ -244,10 +244,10 @@ class DataGetter {
     {
 
 	    $query = "SELECT ".
-            "         id, test_name, memory, engine_name, type ".
+            "         id, test_name, memory, engine_name, type, retest ".
             "     FROM results ".
             "     WHERE error is NULL and query_timeout = 0 " .
-            "     GROUP BY test_name, memory, engine_name, type ".
+            "     GROUP BY test_name, memory, engine_name, type, retest ".
             "     LIMIT 1000000 ".
             "     OPTION max_matches=100000";
 
@@ -274,7 +274,7 @@ class DataGetter {
             if(isset($data['hits']['hits'])){
                 foreach ($data['hits']['hits'] as $row){
                     $row = $row['_source'];
-                    $results[$row['test_name']][$row['memory']][] = $row['engine_name'] . ( $row['type'] ? '_' . $row['type'] : '' );
+                    $results[$row['test_name']][$row['memory']][] = $row['engine_name'] . ( $row['type'] ? '_' . $row['type'] : '' ) . ( $row['retest'] ? '_retest':'');
                 }
             }
 
@@ -342,12 +342,12 @@ class DataGetter {
         $query
             = "SELECT " .
             "    id, test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), " .
-            "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) " .
+            "    avg(avg_fastest), min(checksum), max(query_timeout), retest, group_concat(error) " .
             "FROM results " .
             "WHERE error is NULL AND query_timeout = 0 " .
             "    AND test_name = '" . $this->sanitizeTestName($testName) ."'".
             "    AND memory = " . (int) $memory . " ".
-            "GROUP BY test_name, engine_name, type, original_query, memory " .
+            "GROUP BY test_name, engine_name, type, original_query, memory, retest " .
             "ORDER BY original_query ASC " .
             "LIMIT 1000000 " .
             "OPTION max_matches=100000";
@@ -413,73 +413,32 @@ class DataGetter {
 					}
 				}
 
+                $data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ]['query']   = $row['original_query'];
 
-				$data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ]['query']   = $row['original_query'];
-				$data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ][ $engine ] = [
-					'slowest'  => $row['avg(slowest)'],
-					'fastest'  => $row['avg(fastest)'],
-					'fast_avg' => $row['avg(avg_fastest)'],
-					'checksum' => $row['min(checksum)'],
-					'id'       => $id,
-				];
+                if ($row['retest']) {
+                    $data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ][ $engine."_retest" ] = [
+                        'slowest'  => $row['avg(slowest)'],
+                        'fastest'  => $row['avg(fastest)'],
+                        'fast_avg' => $row['avg(avg_fastest)'],
+                        'checksum' => $row['min(checksum)'],
+                        'id'       => $id,
+                    ];
+                }
+
+                $data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ][ $engine ] = [
+                    'slowest'  => $row['avg(slowest)'],
+                    'fastest'  => $row['avg(fastest)'],
+                    'fast_avg' => $row['avg(avg_fastest)'],
+                    'checksum' => $row['min(checksum)'],
+                    'id'       => $id,
+                ];
 			}
 
 			ksort( $engines, SORT_STRING );
 
-			for ( $i = 1; $i <= 30; $i ++ ) {
-				$sorted   = [];
-				$selected = [];
-				foreach ( [ 'engines', 'tests', 'memory' ] as $item ) {
-					if ( $item === 'memory' ) {
-						$key = $this->array_key_first( $$item );
-					} elseif ( $item === 'engines' ) {
-						$key = $this->array_random_keys( $$item );
-					} else {
-						$key = $this->array_random_key( $$item );
-					}
-
-					$selected[ $item ] = $key;
-
-
-					foreach ( $$item as $name => $row ) {
-						$sorted[ $item ][] = [ $name => $row ];
-					}
-				}
-
-
-				// Need to select available engine in this test
-
-				if ( isset( $data[ $selected['tests'] ][ $selected['memory'] ] ) ) {
-					$firstTestQuery
-						= $data[ $selected['tests'] ][ $selected['memory'] ][ key( $data[ $selected['tests'] ][ $selected['memory'] ] ) ];
-
-					if ( isset( $firstTestQuery[ $selected['engines'][0] ] ) && isset( $firstTestQuery[ $selected['engines'][1] ] ) ) {
-						foreach ( [ 'engines', 'tests', 'memory' ] as $item ) {
-							foreach ( $sorted[ $item ] as $k => $v ) {
-								if ( $item === 'engines' ) {
-									if ( in_array( key( $v ), $selected['engines'] ) ) {
-										$sorted[ $item ][ $k ][ key( $v ) ] = 1;
-									}
-								} else {
-									if ( isset( $v[ $selected[ $item ] ] ) ) {
-										$sorted[ $item ][ $k ][ $selected[ $item ] ] = 1;
-									}
-								}
-							}
-						}
-
-						break;
-					}
-				}
-			}
-
-
 			$data = [
 			    'queryId'         => $queryId,
 				'data'            => $data,
-				'tests'           => $sorted['tests'],
-				'engines'         => $sorted['engines'],
-				'memory'          => $sorted['memory'],
 				'testsInfo'       => $testsInfo
 			];
 
@@ -487,30 +446,6 @@ class DataGetter {
 		}
 
 		return false;
-	}
-
-
-	private function array_key_first( array $array ) {
-		return array_keys( $array )[0];
-	}
-
-	private function array_random_key( array $array ) {
-		$keys = array_keys( $array );
-		shuffle( $keys );
-
-		return $keys[0];
-	}
-
-	private function array_random_keys( array $array, int $count = 2 ): array {
-		$keys = array_keys( $array );
-		shuffle( $keys );
-
-		$selectedKeys = [];
-		for ( $k = 0; $k < $count; $k ++ ) {
-			$selectedKeys[] = $keys[ $k ];
-		}
-
-		return $selectedKeys;
 	}
 
 	private function parseShortServerInfo( $info ) {
