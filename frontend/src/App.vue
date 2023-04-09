@@ -382,7 +382,7 @@ export default {
       for (let key in this.engines) {
         for (let engineName in this.engines[key]) {
           if (engineName.indexOf('_retest') > 0) {
-            delete this.engines[key];
+            this.$delete(this.engines, key)
           }
         }
       }

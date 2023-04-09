@@ -74,7 +74,7 @@ export default {
       // eslint-disable-next-line no-unused-vars
       const filtered = asArray.filter(([key, val]) => {
         let fullName = Object.keys(val)[0];
-        return fullName.indexOf(groupName) === 0
+        return fullName.indexOf(groupName) === 0 && fullName.indexOf('_retest') === -1
       });
 
       return Object.fromEntries(filtered);
