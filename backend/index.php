@@ -60,7 +60,7 @@ class DataGetter {
 		curl_close( $curl );
 
 		if ( empty( $result ) ) {
-			$this->printResponse( "Server responsed with empty data", self::STATUS_ERROR );
+			$this->printResponse( "Server respond with empty data", self::STATUS_ERROR );
 
 			return false;
 		}

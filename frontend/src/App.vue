@@ -336,6 +336,7 @@ export default {
     },
 
     fillEngineGroups() {
+      this.removeRetestEngine();
       this.engineGroups = {};
       for (let engineFullName of this.availableEngines) {
 
@@ -377,8 +378,7 @@ export default {
           })
     },
 
-    showRetestResults(engine) {
-
+    removeRetestEngine(skipRetestEngines = false){
       for (let key in this.engines) {
         for (let engineName in this.engines[key]) {
           if (engineName.indexOf('_retest') > 0) {
@@ -386,6 +386,18 @@ export default {
           }
         }
       }
+
+      if (!skipRetestEngines){
+        for (let engineKey in this.retestEngines) {
+          for (let engineName in this.retestEngines[engineKey]) {
+            this.retestEngines[engineKey][engineName]=0;
+          }
+        }
+      }
+    },
+    showRetestResults(engine) {
+
+      this.removeRetestEngine(true);
 
       for (let engineKey in this.retestEngines) {
         if (Object.keys(this.retestEngines[engineKey]).includes(engine + "_retest")) {
@@ -400,6 +412,18 @@ export default {
           this.retestEngines[engineKey][engine + "_retest"] = !isEnabled;
         }
       }
+
+
+      this.engines = this.engines.sort(function (a, b) {
+        if (Object.keys(a)[0] < Object.keys(b)[0]) {
+          return 1;
+        }
+        if (Object.keys(a)[0] > Object.keys(b)[0]) {
+          return -1;
+        }
+
+        return 0;
+      });
 
       this.applySelection(false)
     },
