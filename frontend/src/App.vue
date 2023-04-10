@@ -416,10 +416,10 @@ export default {
 
       this.engines = this.engines.sort(function (a, b) {
         if (Object.keys(a)[0] < Object.keys(b)[0]) {
-          return 1;
+          return -1;
         }
         if (Object.keys(a)[0] > Object.keys(b)[0]) {
-          return -1;
+          return 1;
         }
 
         return 0;
