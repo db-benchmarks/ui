@@ -40,16 +40,18 @@
               {{
                 key.replaceAll(/(manticore)_(master|columnar)_(.*?)_(.*?)/g, 'Manticore $2 $3 $4').replaceAll('_', ' ')
               }}
-              <DatasetInfoIcon
-                  v-bind:engine="key"
-                  v-on:showDatasetInfo="emitShowDatasetInfo"
-              ></DatasetInfoIcon>
-              <template v-if="hasRetest(key)">
-                <RetestIcon
+              <span class="text-nowrap">
+                <DatasetInfoIcon
                     v-bind:engine="key"
-                    v-on:showRetestResults="emitShowRetestResults"
-                ></RetestIcon>
-              </template>
+                    v-on:showDatasetInfo="emitShowDatasetInfo"
+                ></DatasetInfoIcon>
+                <template v-if="hasRetest(key)">
+                  <RetestIcon
+                      v-bind:engine="key"
+                      v-on:showRetestResults="emitShowRetestResults"
+                  ></RetestIcon>
+                </template>
+              </span>
             </th>
           </template>
           <template v-else>
@@ -57,16 +59,18 @@
               {{
                 key.replaceAll(/(manticore)_(master|columnar)_(.*?)_(.*?)/g, 'Manticore $2 $3 $4').replaceAll('_', ' ')
               }}
-              <DatasetInfoIcon
-                  v-bind:engine="key"
-                  v-on:showDatasetInfo="emitShowDatasetInfo"
-              ></DatasetInfoIcon>
-              <template v-if="hasRetest(key)">
-                <RetestIcon
+              <span class="text-nowrap">
+                <DatasetInfoIcon
                     v-bind:engine="key"
-                    v-on:showRetestResults="emitShowRetestResults"
-                ></RetestIcon>
-              </template>
+                    v-on:showDatasetInfo="emitShowDatasetInfo"
+                ></DatasetInfoIcon>
+                <template v-if="hasRetest(key)">
+                  <RetestIcon
+                      v-bind:engine="key"
+                      v-on:showRetestResults="emitShowRetestResults"
+                  ></RetestIcon>
+                </template>
+              </span>
             </th>
           </template>
         </tr>
