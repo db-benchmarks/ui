@@ -99,11 +99,13 @@
                v-bind:cache="prepareCacheForTable"
                v-bind:results="filteredResults"
                v-bind:check-sum="checksums"
+               v-bind:retestEngines="retestEngines"
                v-bind:checkedQueries.sync="queries"
                v-on:update:checked="modifyUrl()"
                v-on:showDiff="showDiff"
                v-on:showInfo="showInfo"
                v-on:showDatasetInfo="showDatasetInfo"
+               v-on:showRetestResults="showRetestResults"
         />
       </div>
       <QueryInfo
@@ -160,7 +162,7 @@ export default {
       memory: [],
       queries: [],
       checksums: {},
-      availableEngines: [],
+      retestEngines: [],
       resultsCount: 0,
       selectedTest: 0,
       queryInfo: {},
@@ -265,7 +267,7 @@ export default {
         if (!selection) {
           let randomSelection = Math.floor(Math.random() * this[type].length)
           for (let index in this[type][randomSelection]) {
-            if (this[type][randomSelection][index] === 1) {
+            if (this[type][randomSelection][index] === 1 && this[type].length > 1) {
               this.shuffleSelectionIfNonSelected(type);
             } else {
               this[type][randomSelection][index] = 1;
@@ -307,7 +309,19 @@ export default {
       let selectedTest = this.getSelectedRow(this.tests)[0];
       let selectedMemory = this.getSelectedRow(this.memory)[0];
       let engines = [];
-      this.availableEngines = this.initData[selectedTest][selectedMemory];
+      let retestEngines = [];
+
+      let unfilteredEngines = this.initData[selectedTest][selectedMemory];
+
+      for (let engineName of unfilteredEngines.filter(name => name.indexOf('_retest') >= 0)) {
+        let obj = {};
+        obj[engineName] = 0;
+        retestEngines.push(obj)
+      }
+
+      this.retestEngines = retestEngines;
+
+      this.availableEngines = unfilteredEngines.filter(name => name.indexOf('_retest') === -1);
       for (let engineName of this.availableEngines) {
         let obj = {};
         obj[engineName] = 0;
@@ -322,6 +336,7 @@ export default {
     },
 
     fillEngineGroups() {
+      this.removeRetestEngine();
       this.engineGroups = {};
       for (let engineFullName of this.availableEngines) {
 
@@ -361,6 +376,56 @@ export default {
             this.showToast(error.message);
             this.preloaderVisible = false;
           })
+    },
+
+    removeRetestEngine(skipRetestEngines = false){
+      for (let key in this.engines) {
+        for (let engineName in this.engines[key]) {
+          if (engineName.indexOf('_retest') > 0) {
+            this.$delete(this.engines, key)
+          }
+        }
+      }
+
+      if (!skipRetestEngines){
+        for (let engineKey in this.retestEngines) {
+          for (let engineName in this.retestEngines[engineKey]) {
+            this.retestEngines[engineKey][engineName]=0;
+          }
+        }
+      }
+    },
+    showRetestResults(engine) {
+
+      this.removeRetestEngine(true);
+
+      for (let engineKey in this.retestEngines) {
+        if (Object.keys(this.retestEngines[engineKey]).includes(engine + "_retest")) {
+
+          let isEnabled = this.retestEngines[engineKey][engine + "_retest"];
+
+          if (!isEnabled) {
+            let row = {};
+            row[engine + "_retest"] = 1;
+            this.engines.push(row);
+          }
+          this.retestEngines[engineKey][engine + "_retest"] = !isEnabled;
+        }
+      }
+
+
+      this.engines = this.engines.sort(function (a, b) {
+        if (Object.keys(a)[0] < Object.keys(b)[0]) {
+          return -1;
+        }
+        if (Object.keys(a)[0] > Object.keys(b)[0]) {
+          return 1;
+        }
+
+        return 0;
+      });
+
+      this.applySelection(false)
     },
 
     showInfo(row, id) {

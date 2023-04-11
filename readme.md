@@ -31,7 +31,7 @@ cd db-benchmarks-site
 cp .env_example .env
 # update .env if you want to run it on specific hostname, otherwise it will run on localhost and db.localhost
 git submodule update --init --remote site/db-benchmarks
-docker-compose up
+docker-compose up -d
 
 # wait until it fully starts, then in another terminal tab:
 ./site/db-benchmarks/test --save=./site/db-benchmarks/results --host=db.localhost --port=80 --username=bench --password=bench

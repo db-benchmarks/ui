@@ -40,10 +40,18 @@
               {{
                 key.replaceAll(/(manticore)_(master|columnar)_(.*?)_(.*?)/g, 'Manticore $2 $3 $4').replaceAll('_', ' ')
               }}
-              <DatasetInfoIcon
-                  v-bind:engine="key"
-                  v-on:showDatasetInfo="emitShowDatasetInfo"
-              ></DatasetInfoIcon>
+              <span class="text-nowrap">
+                <DatasetInfoIcon
+                    v-bind:engine="key"
+                    v-on:showDatasetInfo="emitShowDatasetInfo"
+                ></DatasetInfoIcon>
+                <template v-if="hasRetest(key)">
+                  <RetestIcon
+                      v-bind:engine="key"
+                      v-on:showRetestResults="emitShowRetestResults"
+                  ></RetestIcon>
+                </template>
+              </span>
             </th>
           </template>
           <template v-else>
@@ -51,10 +59,18 @@
               {{
                 key.replaceAll(/(manticore)_(master|columnar)_(.*?)_(.*?)/g, 'Manticore $2 $3 $4').replaceAll('_', ' ')
               }}
-              <DatasetInfoIcon
-                  v-bind:engine="key"
-                  v-on:showDatasetInfo="emitShowDatasetInfo"
-              ></DatasetInfoIcon>
+              <span class="text-nowrap">
+                <DatasetInfoIcon
+                    v-bind:engine="key"
+                    v-on:showDatasetInfo="emitShowDatasetInfo"
+                ></DatasetInfoIcon>
+                <template v-if="hasRetest(key)">
+                  <RetestIcon
+                      v-bind:engine="key"
+                      v-on:showRetestResults="emitShowRetestResults"
+                  ></RetestIcon>
+                </template>
+              </span>
             </th>
           </template>
         </tr>
@@ -163,9 +179,10 @@ import DiffIcon from "@/components/DiffIcon";
 import InfoIcon from "@/components/InfoIcon";
 import QuestionIcon from "@/components/QuestionIcon";
 import DatasetInfoIcon from "./DatasetInfoIcon";
+import RetestIcon from "./RetestIcon";
 
 export default {
-  components: {DatasetInfoIcon, QuerySelector, Bar, DiffIcon, InfoIcon, QuestionIcon},
+  components: {RetestIcon, DatasetInfoIcon, QuerySelector, Bar, DiffIcon, InfoIcon, QuestionIcon},
   props: {
     results: {
       type: Array,
@@ -187,6 +204,10 @@ export default {
       type: Object,
       required: true
     },
+    retestEngines: {
+      type: Array,
+      required: true
+    }
   },
   data() {
     return {
@@ -252,8 +273,19 @@ export default {
     },
   },
   methods: {
+    hasRetest(engine) {
+      for (let engineKey in this.retestEngines) {
+        if (Object.keys(this.retestEngines[engineKey]).includes(engine + "_retest")) {
+          return true;
+        }
+      }
+      return false;
+    },
     emitShowDatasetInfo(engine) {
       this.$emit("showDatasetInfo", engine);
+    },
+    emitShowRetestResults(engine) {
+      this.$emit("showRetestResults", engine);
     },
     emitShowInfo(row, id) {
       this.$emit('showInfo', row, id);

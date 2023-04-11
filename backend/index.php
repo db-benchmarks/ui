@@ -17,14 +17,13 @@ class DataGetter {
 
 	private $startTime;
 
-	public function __construct($startTime)
-    {
-        $this->startTime = $startTime;
-    }
+	public function __construct( $startTime ) {
+		$this->startTime = $startTime;
+	}
 
-    private function printResponse( $data, string $status = self::STATUS_SUCCESS, int $code = 200 ) {
-		$result = [ 'status' => $status ];
-		$result['executionTime'] = microtime(true) - $this->startTime;
+	private function printResponse( $data, string $status = self::STATUS_SUCCESS, int $code = 200 ) {
+		$result                  = [ 'status' => $status ];
+		$result['executionTime'] = microtime( true ) - $this->startTime;
 
 		if ( $status === self::STATUS_ERROR ) {
 			if ( $code === 200 ) {
@@ -60,7 +59,7 @@ class DataGetter {
 		curl_close( $curl );
 
 		if ( empty( $result ) ) {
-			$this->printResponse( "Server responsed with empty data", self::STATUS_ERROR );
+			$this->printResponse( "Server respond with empty data", self::STATUS_ERROR );
 
 			return false;
 		}
@@ -171,8 +170,8 @@ class DataGetter {
 	}
 
 	private function getSystemDiff( $rowFirst, $rowSecond ) {
-		$rowFirstFileName  = DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . $rowFirst['engine'];
-		$rowSecondFileName = DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . $rowSecond['engine'];
+		$rowFirstFileName  = DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . $rowFirst['engine'] . '_' . $rowFirst['retest'];
+		$rowSecondFileName = DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . $rowSecond['engine'] . '_' . $rowSecond['retest'];
 		unset( $rowFirst['engine'], $rowSecond['engine'] );
 
 		$compare = [];
@@ -182,7 +181,7 @@ class DataGetter {
 		file_put_contents( $rowSecondFileName, $rowSecond['Response'] . "\n" );
 
 
-		$command = 'diff -U 1000000 -u "' . $rowFirstFileName . '" "' . $rowSecondFileName.'"';
+		$command = 'diff -U 1000000 -u "' . $rowFirstFileName . '" "' . $rowSecondFileName . '"';
 		$output  = [];
 		exec( $command, $output, $exitCode );
 		if ( $exitCode <= 1 ) {
@@ -190,9 +189,9 @@ class DataGetter {
 				$compare['Response'] = implode( "\n",
 					str_replace( DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR, "", $output ) );
 			} else {
-				$compare['Response'] = "--- ".$rowFirstFileName."\n".
-				                       "+++ ".$rowSecondFileName."\n".
-				                       "@@ -0 +0 @@\n".
+				$compare['Response'] = "--- " . $rowFirstFileName . "\n" .
+				                       "+++ " . $rowSecondFileName . "\n" .
+				                       "@@ -0 +0 @@\n" .
 				                       $rowFirst['Response'];
 			}
 		} else {
@@ -237,25 +236,24 @@ class DataGetter {
 				'RAM limit' => $row['memory'],
 			],
 			'engine'      => $row['engine_name'] . '_' . $row['type'],
+			'retest'      => intval( $row['retest'] ),
 		];
 	}
 
-	public function init(): bool
-    {
-
-	    $query = "SELECT ".
-            "         id, test_name, memory, engine_name, type ".
-            "     FROM results ".
-            "     WHERE error is NULL and query_timeout = 0 " .
-            "     GROUP BY test_name, memory, engine_name, type ".
-            "     LIMIT 1000000 ".
-            "     OPTION max_matches=100000";
+	public function init(): bool {
+		$query = "SELECT " .
+		         "         id, test_name, memory, engine_name, type, retest " .
+		         "     FROM results " .
+		         "     WHERE error is NULL and query_timeout = 0 " .
+		         "     GROUP BY test_name, memory, engine_name, type, retest " .
+		         "     LIMIT 1000000 " .
+		         "     OPTION max_matches=100000";
 
 		// the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
 		//$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
 		$result = $this->request( $query );
 
-		$result = $this->prepareInitResponse($result );
+		$result = $this->prepareInitResponse( $result );
 		if ( ! $result ) {
 			$this->printResponse( "Error while preparing data", self::STATUS_ERROR );
 		}
@@ -265,106 +263,101 @@ class DataGetter {
 		return true;
 	}
 
-	private function prepareInitResponse($data): bool|array
-    {
-        $data = json_decode($data, true);
-        if($data !== false){
+	private function prepareInitResponse( $data ): bool|array {
+		$data = json_decode( $data, true );
+		if ( $data !== false ) {
+			$results = [];
+			if ( isset( $data['hits']['hits'] ) ) {
+				foreach ( $data['hits']['hits'] as $row ) {
+					$row                                              = $row['_source'];
+					$results[ $row['test_name'] ][ $row['memory'] ][] = $row['engine_name'] . ( $row['type'] ? '_' . $row['type'] : '' )
+					                                                    . ( $row['retest'] ? '_retest' : '' );
+				}
+			}
 
-            $results = [];
-            if(isset($data['hits']['hits'])){
-                foreach ($data['hits']['hits'] as $row){
-                    $row = $row['_source'];
-                    $results[$row['test_name']][$row['memory']][] = $row['engine_name'] . ( $row['type'] ? '_' . $row['type'] : '' );
-                }
-            }
+			if ( $results !== [] ) {
+				return $results;
+			}
+		}
 
-            if ($results !== []){
-                return  $results;
-            }
+		return false;
+	}
 
-        }
+	public function getServerInfo( $testName ): bool {
+		$query = "SELECT" .
+		         "         id, test_name, test_info, server_info" .
+		         "     FROM results " .
+		         "WHERE error is NULL AND query_timeout = 0 " .
+		         "    AND test_name = '" . $this->sanitizeTestName( $testName ) . "' " .
+		         "LIMIT 1";
 
-	    return false;
-    }
+		$result = $this->request( $query );
 
-    public function getServerInfo($testName): bool
-    {
-        $query = "SELECT".
-            "         id, test_name, test_info, server_info".
-            "     FROM results ".
-            "WHERE error is NULL AND query_timeout = 0 " .
-            "    AND test_name = '" . $this->sanitizeTestName($testName) ."' ".
-            "LIMIT 1";
+		$result = $this->prepareInfoResponse( $result );
+		if ( ! $result ) {
+			$this->printResponse( "Error while preparing data", self::STATUS_ERROR );
+		}
 
-        $result = $this->request( $query );
+		$this->printResponse( $result );
 
-        $result = $this->prepareInfoResponse($result );
-        if ( ! $result ) {
-            $this->printResponse( "Error while preparing data", self::STATUS_ERROR );
-        }
+		return true;
+	}
 
-        $this->printResponse( $result );
+	private function prepareInfoResponse( $data ): bool|array {
+		$data = json_decode( $data, true );
+		if ( $data !== false ) {
+			if ( isset( $data['hits']['hits'] ) ) {
+				foreach ( $data['hits']['hits'] as $row ) {
+					$row = $row['_source'];
 
-        return true;
-    }
+					return [
+						'testsInfo'       => $row['test_info'],
+						'shortServerInfo' => $this->parseShortServerInfo( $row['server_info'] ),
+						'fullServerInfo'  => $row['server_info'],
+					];
+				}
+			}
+		}
 
-    private function prepareInfoResponse($data): bool|array
-    {
-        $data = json_decode($data, true);
-        if ($data !== false) {
-            if (isset($data['hits']['hits'])) {
-                foreach ($data['hits']['hits'] as $row) {
-                    $row = $row['_source'];
+		return false;
+	}
 
-                    return [
-                        'testsInfo' => $row['test_info'],
-                        'shortServerInfo' => $this->parseShortServerInfo($row['server_info']),
-                        'fullServerInfo' => $row['server_info'],
-                    ];
-                }
-            }
-        }
+	private function sanitizeTestName( $testName ) {
+		$sanitizedTestName = preg_replace( '[^a-zA-Z0-9_]', '', $testName );
+		if ( mb_strlen( $sanitizedTestName ) > 20 ) {
+			$this->printResponse( "Test name can't be longer than 20 characters", self::STATUS_ERROR );
+		}
 
-        return false;
-    }
+		return $sanitizedTestName;
+	}
 
-    private function sanitizeTestName($testName){
-        $sanitizedTestName = preg_replace('[^a-zA-Z0-9_]', '', $testName);
-        if (mb_strlen($sanitizedTestName)>20){
-            $this->printResponse( "Test name can't be longer than 20 characters", self::STATUS_ERROR );
-        }
+	public function getTest( $testName, $memory ): bool {
+		$query
+			= "SELECT " .
+			  "    id, test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), " .
+			  "    avg(avg_fastest), min(checksum), max(query_timeout), retest, group_concat(error) " .
+			  "FROM results " .
+			  "WHERE error is NULL AND query_timeout = 0 " .
+			  "    AND test_name = '" . $this->sanitizeTestName( $testName ) . "'" .
+			  "    AND memory = " . (int) $memory . " " .
+			  "GROUP BY test_name, engine_name, type, original_query, memory, retest " .
+			  "ORDER BY original_query ASC " .
+			  "LIMIT 1000000 " .
+			  "OPTION max_matches=100000";
 
-        return $sanitizedTestName;
-    }
+		// the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
+		//$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
+		$result = $this->request( $query );
 
-    public function getTest($testName, $memory): bool
-    {
-        $query
-            = "SELECT " .
-            "    id, test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), " .
-            "    avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) " .
-            "FROM results " .
-            "WHERE error is NULL AND query_timeout = 0 " .
-            "    AND test_name = '" . $this->sanitizeTestName($testName) ."'".
-            "    AND memory = " . (int) $memory . " ".
-            "GROUP BY test_name, engine_name, type, original_query, memory " .
-            "ORDER BY original_query ASC " .
-            "LIMIT 1000000 " .
-            "OPTION max_matches=100000";
+		$result = $this->prepareTestResponse( $result );
+		if ( ! $result ) {
+			$this->printResponse( "Error while preparing data", self::STATUS_ERROR );
+		}
 
-        // the below enables the mode which allows to visualize different attempts of the same engine + type, see also $engine = below
-        //$query = "select test_name, test_time m, memory, original_query, engine_name, type, avg(fastest), avg(slowest), avg(avg_fastest), min(checksum), max(query_timeout), group_concat(error) from results where error is NULL and query_timeout = 0 group by test_name, test_time, engine_name, type, original_query, memory order by original_query asc limit 1000000";
-        $result = $this->request( $query );
+		$this->printResponse( $result );
 
-        $result = $this->prepareTestResponse($result );
-        if ( ! $result ) {
-            $this->printResponse( "Error while preparing data", self::STATUS_ERROR );
-        }
-
-        $this->printResponse( $result );
-
-        return true;
-    }
+		return true;
+	}
 
 	private function prepareTestResponse( $result ) {
 		$result = json_decode( $result, true );
@@ -375,14 +368,13 @@ class DataGetter {
 			$tests   = [];
 			$memory  = [];
 
-			$testsInfo       = [];
+			$testsInfo = [];
 
 			$queryId = null;
 			foreach ( $result['hits']['hits'] as $row ) {
-
-			    if($queryId === null){
-                    $queryId = $row['_id'];
-                }
+				if ( $queryId === null ) {
+					$queryId = $row['_id'];
+				}
 
 				$id                         = $row['_id'];
 				$row                        = $row['_source'];
@@ -413,8 +405,19 @@ class DataGetter {
 					}
 				}
 
+				$data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ]['query'] = $row['original_query'];
 
-				$data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ]['query']   = $row['original_query'];
+				if ( $row['retest'] ) {
+					$data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ][ $engine . "_retest" ] = [
+						'slowest'  => $row['avg(slowest)'],
+						'fastest'  => $row['avg(fastest)'],
+						'fast_avg' => $row['avg(avg_fastest)'],
+						'checksum' => $row['min(checksum)'],
+						'id'       => $id,
+					];
+					continue;
+				}
+
 				$data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ][ $engine ] = [
 					'slowest'  => $row['avg(slowest)'],
 					'fastest'  => $row['avg(fastest)'],
@@ -426,91 +429,16 @@ class DataGetter {
 
 			ksort( $engines, SORT_STRING );
 
-			for ( $i = 1; $i <= 30; $i ++ ) {
-				$sorted   = [];
-				$selected = [];
-				foreach ( [ 'engines', 'tests', 'memory' ] as $item ) {
-					if ( $item === 'memory' ) {
-						$key = $this->array_key_first( $$item );
-					} elseif ( $item === 'engines' ) {
-						$key = $this->array_random_keys( $$item );
-					} else {
-						$key = $this->array_random_key( $$item );
-					}
-
-					$selected[ $item ] = $key;
-
-
-					foreach ( $$item as $name => $row ) {
-						$sorted[ $item ][] = [ $name => $row ];
-					}
-				}
-
-
-				// Need to select available engine in this test
-
-				if ( isset( $data[ $selected['tests'] ][ $selected['memory'] ] ) ) {
-					$firstTestQuery
-						= $data[ $selected['tests'] ][ $selected['memory'] ][ key( $data[ $selected['tests'] ][ $selected['memory'] ] ) ];
-
-					if ( isset( $firstTestQuery[ $selected['engines'][0] ] ) && isset( $firstTestQuery[ $selected['engines'][1] ] ) ) {
-						foreach ( [ 'engines', 'tests', 'memory' ] as $item ) {
-							foreach ( $sorted[ $item ] as $k => $v ) {
-								if ( $item === 'engines' ) {
-									if ( in_array( key( $v ), $selected['engines'] ) ) {
-										$sorted[ $item ][ $k ][ key( $v ) ] = 1;
-									}
-								} else {
-									if ( isset( $v[ $selected[ $item ] ] ) ) {
-										$sorted[ $item ][ $k ][ $selected[ $item ] ] = 1;
-									}
-								}
-							}
-						}
-
-						break;
-					}
-				}
-			}
-
-
 			$data = [
-			    'queryId'         => $queryId,
-				'data'            => $data,
-				'tests'           => $sorted['tests'],
-				'engines'         => $sorted['engines'],
-				'memory'          => $sorted['memory'],
-				'testsInfo'       => $testsInfo
+				'queryId'   => $queryId,
+				'data'      => $data,
+				'testsInfo' => $testsInfo,
 			];
 
 			return $data;
 		}
 
 		return false;
-	}
-
-
-	private function array_key_first( array $array ) {
-		return array_keys( $array )[0];
-	}
-
-	private function array_random_key( array $array ) {
-		$keys = array_keys( $array );
-		shuffle( $keys );
-
-		return $keys[0];
-	}
-
-	private function array_random_keys( array $array, int $count = 2 ): array {
-		$keys = array_keys( $array );
-		shuffle( $keys );
-
-		$selectedKeys = [];
-		for ( $k = 0; $k < $count; $k ++ ) {
-			$selectedKeys[] = $keys[ $k ];
-		}
-
-		return $selectedKeys;
 	}
 
 	private function parseShortServerInfo( $info ) {
@@ -541,17 +469,17 @@ class DataGetter {
 	}
 }
 
-$dg = new DataGetter(microtime(true));
+$dg = new DataGetter( microtime( true ) );
 if ( isset( $_GET['compare'] ) && isset( $_GET['id1'] ) && isset( $_GET['id2'] ) ) {
 	$dg->getDiff( (int) $_GET['id1'], (int) $_GET['id2'] );
 } elseif ( ! empty( $_GET['dataset_info'] ) && isset( $_GET['id'] ) ) {
 	$dg->getDatasetInfo( (int) $_GET['id'] );
 } elseif ( ! empty( $_GET['info'] ) && isset( $_GET['id'] ) ) {
 	$dg->getRow( (int) $_GET['id'] );
-} elseif(!empty($_GET['test_name']) && !empty($_GET['memory'])) {
-    $dg->getTest($_GET['test_name'], $_GET['memory']);
-} elseif(!empty($_GET['server_info']) && !empty($_GET['test_name'])){
-    $dg->getServerInfo($_GET['test_name']);
+} elseif ( ! empty( $_GET['test_name'] ) && ! empty( $_GET['memory'] ) ) {
+	$dg->getTest( $_GET['test_name'], $_GET['memory'] );
+} elseif ( ! empty( $_GET['server_info'] ) && ! empty( $_GET['test_name'] ) ) {
+	$dg->getServerInfo( $_GET['test_name'] );
 } else {
 	$dg->init();
 }
