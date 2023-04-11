@@ -423,6 +423,7 @@ class DataGetter {
                         'checksum' => $row['min(checksum)'],
                         'id'       => $id,
                     ];
+		    continue;
                 }
 
                 $data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ][ $engine ] = [
