@@ -171,8 +171,8 @@ class DataGetter {
 	}
 
 	private function getSystemDiff( $rowFirst, $rowSecond ) {
-		$rowFirstFileName  = DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . $rowFirst['engine'];
-		$rowSecondFileName = DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . $rowSecond['engine'];
+		$rowFirstFileName  = DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . $rowFirst['engine'] . '_' . $rowFirst['retest'];
+		$rowSecondFileName = DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . $rowSecond['engine'] . '_' . $rowSecond['retest'];
 		unset( $rowFirst['engine'], $rowSecond['engine'] );
 
 		$compare = [];
@@ -237,6 +237,7 @@ class DataGetter {
 				'RAM limit' => $row['memory'],
 			],
 			'engine'      => $row['engine_name'] . '_' . $row['type'],
+                        'retest'      => intval($row['retest'])
 		];
 	}
 
