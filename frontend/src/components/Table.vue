@@ -652,16 +652,20 @@ export default {
             } else {
               if (currentRelation <= 1.03) {
                 obj['color'] = "RGB(0, 255, 0)"; // green
+              } else if (Math.abs(item.value - minValue[byRow]) <= 5 && minValue[byRow] > 50 && minValue[byRow] <= 75) {
+                obj['color'] = "RGB(0, 255, 0)"; // green
+              } else if (Math.abs(item.value - minValue[byRow]) <= 3 && minValue[byRow] > 30 && minValue[byRow] <= 50) {
+                obj['color'] = "RGB(0, 255, 0)"; // green
               } else if (Math.abs(item.value - minValue[byRow]) <= 2 && minValue[byRow] >= 10 && minValue[byRow] <= 30) {
                 obj['color'] = "RGB(0, 255, 0)"; // green
-              } else if (Math.abs(item.value - minValue[byRow]) <= 1 && minValue[byRow] < 10) {
+              } else if (Math.abs(item.value - minValue[byRow]) <= 2 && minValue[byRow] < 10) {
                 obj['color'] = "RGB(0, 255, 0)"; // green
-              } else if (currentRelation <= 1.05) {
-                obj['color'] = "RGB(255, 0, 0, 0.5)"; // pink
+              } else if (currentRelation <= 1.06) {
+                obj['color'] = "RGB(255, 193, 193)"; // pink
               } else if (currentRelation <= 5) {
                 obj['color'] = "RGB(255, 0, 0, " + (currentRelation * 0.9) + ")"; // red
               } else if (currentRelation > 5) {
-                obj['color'] = "RGB(139, 0, 0)"; // darkred
+                obj['color'] = "RGB(139, 0, 0)"; // dark red
               }
             }
           }
