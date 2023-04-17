@@ -245,7 +245,8 @@ class DataGetter {
 		         "         id, test_name, memory, engine_name, type, retest " .
 		         "     FROM results " .
 		         "     WHERE error is NULL and query_timeout = 0 " .
-		         "     GROUP BY test_name, memory, engine_name, type, retest " .
+			 "     GROUP BY test_name, memory, engine_name, type, retest " .
+			 "     ORDER BY test_name ASC, engine_name ASC, type ASC, memory ASC " .
 		         "     LIMIT 1000000 " .
 		         "     OPTION max_matches=100000";
 
