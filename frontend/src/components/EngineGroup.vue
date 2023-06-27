@@ -13,7 +13,10 @@
           <div @click="checkChildIsSingle(name, value, '#collapse-'+name)"
                :class="'d-flex engine-block justify-content-center'+ (isAnyActive(name) ? ' active-engine' : '')">
             <img :src="require(`@/assets/logos/${name}.svg`)">
-            <span class="engine-badge">{{ getSelectedItemsCount(value) }}</span>
+            <span class="engine-badge"
+                  v-bind:style="{ 'background-color': computeBackground(value)}">
+              {{ getSelectedItemsCount(value) }}
+            </span>
           </div>
 
         </div>
@@ -53,9 +56,27 @@ export default {
       required: true
     }
   },
+  data(){
+    return{
+      activeGroup: null
+    }
+  },
   methods: {
     changed() {
       this.$emit('changed')
+    },
+    computeBackground(group) {
+      let allCount = Object.values(group).length
+      let selectedCount = Object.values(group).filter((value => value === true)).length
+      let opacity = 0.0;
+      if (selectedCount > 0) {
+        let max = 0.1;
+        opacity = 1 - (Math.pow(max, (selectedCount / allCount)));
+        if (opacity === (1 - max)) {
+          opacity = 1;
+        }
+      }
+      return "rgb(0, 200, 100, " + opacity + ")"
     },
     checkChildIsSingle(groupName, blockItems, target) {
       let items = this.filterItems(groupName);
