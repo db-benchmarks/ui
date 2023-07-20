@@ -11,7 +11,7 @@
       <template v-for="(value, name) in groups">
         <div class="col-2 d-flex justify-content-center" :key="name" role="button">
           <div @click="checkChildIsSingle(name, value, '#collapse-'+name)"
-               :class="'d-flex engine-block justify-content-center'+ (isAnyActive(name) ? ' active-engine' : '')">
+               :class="'d-flex engine-block '+ (currentSelection === name ? 'selected' : '')+' justify-content-center'+ (isAnyActive(name) ? ' active-engine' : '')">
             <img :src="require(`@/assets/logos/${name}.svg`)">
             <span class="engine-badge"
                   v-bind:style="{ 'background-color': computeBackground(value)}">
@@ -56,9 +56,9 @@ export default {
       required: true
     }
   },
-  data(){
-    return{
-      activeGroup: null
+  data() {
+    return {
+      currentSelection: null
     }
   },
   methods: {
@@ -75,10 +75,17 @@ export default {
         if (opacity === (1 - max)) {
           opacity = 1;
         }
+
+        if (opacity < 0.33) {
+          opacity = 0.33;
+        }
+      } else {
+        return "rgb(255, 255, 255)"
       }
       return "rgb(0, 200, 100, " + opacity + ")"
     },
     checkChildIsSingle(groupName, blockItems, target) {
+      this.currentSelection = groupName;
       let items = this.filterItems(groupName);
       let itemKeys = Object.keys(items);
       JQuery('div[data-parent="#eg-accordion"]').removeClass('show')
@@ -171,5 +178,11 @@ div[aria-expanded="true"] {
   -webkit-transition: none;
   transition: none;
   display: none;
+}
+
+.selected {
+  background: #f3f3f3;
+  border-radius: 15px;
+  border: 2px solid #ededed;
 }
 </style>
