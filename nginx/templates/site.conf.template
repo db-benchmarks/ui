@@ -7,6 +7,12 @@ server {
     root /site;
     index index.html index.htm;
 
+    location ~* index\.html?$ {
+      expires -1;
+      add_header Pragma "no-cache";
+      add_header Cache-Control "no-store, must-revalidate";
+    }
+
     location /api {
         root  /backend;
         index index.php;
