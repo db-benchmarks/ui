@@ -108,7 +108,7 @@
                v-on:showRetestResults="showRetestResults"
         />
       </div>
-      <div class="row mt-2">
+      <div class="row mt-2" v-show="initResultsVisibility">
         <h5>Upload speed</h5>
         <InitTable v-bind:content="initResultsFiltered"></InitTable>
       </div>
@@ -173,6 +173,7 @@ export default {
       selectedTest: 0,
       initResults: [],
       initResultsFiltered: [],
+      initResultsVisibility: false,
       queryInfo: {},
       parsedQueryInfo: {},
       compareIds: [],
@@ -231,12 +232,13 @@ export default {
       this.shuffleSelectionIfNonSelected('tests');
 
       this.fillMemory();
-      this.getInitResultsData();
+
     },
 
     getInitResultsData() {
       let testName = this.getSelectedRow(this.tests)[0];
       this.preloaderVisible = true;
+      this.initResultsVisibility = false;
       axios
           .get(this.getServerUrl + this.getApiPath + "?init_info=1&test_name=" + testName,
               {timeout: this.apiCallTimeoutMs})
@@ -244,6 +246,7 @@ export default {
             this.initResults = response.data.result
             this.filterEnginesInInitTable()
             this.preloaderVisible = false;
+            this.initResultsVisibility = true;
           })
           .catch(error => {
             this.showToast(error.message);
@@ -372,6 +375,7 @@ export default {
       this.shuffleSelectionIfNonSelected('engines');
       this.fillEngineGroups();
       this.getTestData();
+      this.getInitResultsData();
     },
 
     fillEngineGroups() {

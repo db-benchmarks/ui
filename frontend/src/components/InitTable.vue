@@ -13,7 +13,7 @@ export default {
     <table class="table init-table">
       <tr>
         <th>Engine</th>
-        <th>Execution time</th>
+        <th>Execution time (sec)</th>
         <th>CPU</th>
         <th>RAM</th>
         <th>Disc</th>
@@ -27,21 +27,21 @@ export default {
             <ul>
               <li><span class="avg">Average:</span> {{ row.metrics.cpu.average }}</li>
               <li><span class="median">Median:</span> {{ row.metrics.cpu.median }}</li>
-              <li><span class="95p">95 percentile:</span> {{ row.metrics.cpu["95p"] }}</li>
+              <li><span class="percentile">95 percentile:</span> {{ row.metrics.cpu["95p"] }}</li>
             </ul>
           </td>
           <td>
             <ul>
               <li><span class="avg">Average:</span> {{ row.metrics.ram.average }}</li>
               <li><span class="median">Median:</span> {{ row.metrics.ram.median }}</li>
-              <li><span class="95p">95 percentile:</span> {{ row.metrics.ram["95p"] }}</li>
+              <li><span class="percentile">95 percentile:</span> {{ row.metrics.ram["95p"] }}</li>
             </ul>
           </td>
           <td>
             <ul>
               <li><span class="avg">Average:</span> {{ row.metrics.disc.average }}</li>
               <li><span class="median">Median:</span> {{ row.metrics.disc.median }}</li>
-              <li><span class="95p">95 percentile:</span> {{ row.metrics.disc["95p"] }}</li>
+              <li><span class="percentile">95 percentile:</span> {{ row.metrics.disc["95p"] }}</li>
             </ul>
           </td>
         </tr>
@@ -55,5 +55,9 @@ export default {
   }
   .init-table ul{
     padding-left: 15px;
+  }
+  .init-table .avg,.median,.percentile{
+    font-size: small;
+    color: #454545;
   }
 </style>
