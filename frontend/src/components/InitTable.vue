@@ -14,9 +14,9 @@ export default {
       <tr>
         <th>Engine</th>
         <th>Execution time (sec)</th>
-        <th>CPU</th>
-        <th>RAM</th>
-        <th>Disc</th>
+        <th>CPU (cores)</th>
+        <th>RAM (MB)</th>
+        <th>Disc (MB)</th>
       </tr>
 
       <template v-for="(row, key) in content">
@@ -39,9 +39,7 @@ export default {
           </td>
           <td>
             <ul>
-              <li><span class="avg">Average:</span> {{ row.metrics.disc.average }}</li>
-              <li><span class="median">Median:</span> {{ row.metrics.disc.median }}</li>
-              <li><span class="percentile">95 percentile:</span> {{ row.metrics.disc["95p"] }}</li>
+              <li><span class="avg">Total:</span> {{ row.metrics.disc.total }}</li>
             </ul>
           </td>
         </tr>
