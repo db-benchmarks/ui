@@ -54,7 +54,7 @@ export default {
       <th>Execution time</th>
       <th>CPU LOAD (cores)</th>
       <th>RAM</th>
-      <th>Read + Write</th>
+      <th>IO (total)</th>
     </tr>
 
     <template v-for="(row, key) in content">
@@ -77,7 +77,8 @@ export default {
         </td>
         <td>
           <ul>
-            <li><span class="avg">Total:</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.total) }}</li>
+            <li><span class="avg">Read:</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.read.total) }}</li>
+            <li><span class="avg">Write:</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.write.total) }}</li>
           </ul>
         </td>
       </tr>
