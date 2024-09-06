@@ -332,7 +332,12 @@ export default {
       this.shuffleSelectionIfNonSelected('engines');
       this.shuffleSelectionIfNonSelected('engines');
       this.fillEngineGroups();
+      this.getCacheSelection();
       this.getTestData();
+    },
+
+    getCacheSelection() {
+      this.getSelectionFromUrl("cache");
     },
 
     fillEngineGroups() {
