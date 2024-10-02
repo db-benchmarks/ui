@@ -304,6 +304,36 @@ class DataGetter {
 		return true;
 	}
 
+
+    public function getInitInfo( $testName ): bool {
+        $query /** @lang manticore */ = "select * from init_results " .
+            "WHERE test_name = '" . $this->sanitizeTestName( $testName ) . "'";
+
+        $result = $this->request( $query );
+
+        $result = $this->prepareInitInfoResponse( $result );
+        if ( ! $result ) {
+            $this->printResponse( "Error while preparing data", self::STATUS_ERROR );
+        }
+
+        $this->printResponse( $result );
+
+        return true;
+    }
+
+    private function prepareInitInfoResponse( $data ): bool|array {
+        $data = json_decode( $data, true );
+        if ( $data !== false ) {
+            if ( isset( $data['hits']['hits'] ) ) {
+                return array_map(function ($row){
+                    return $row['_source'];
+                }, $data['hits']['hits']);
+            }
+        }
+
+        return false;
+    }
+
 	private function prepareInfoResponse( $data ): bool|array {
 		$data = json_decode( $data, true );
 		if ( $data !== false ) {
@@ -481,6 +511,8 @@ if ( isset( $_GET['compare'] ) && isset( $_GET['id1'] ) && isset( $_GET['id2'] )
 	$dg->getTest( $_GET['test_name'], $_GET['memory'] );
 } elseif ( ! empty( $_GET['server_info'] ) && ! empty( $_GET['test_name'] ) ) {
 	$dg->getServerInfo( $_GET['test_name'] );
+} elseif ( ! empty( $_GET['init_info'] ) && ! empty( $_GET['test_name'] ) ) {
+    $dg->getInitInfo( $_GET['test_name'] );
 } else {
 	$dg->init();
 }

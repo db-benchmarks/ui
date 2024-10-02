@@ -108,6 +108,10 @@
                v-on:showRetestResults="showRetestResults"
         />
       </div>
+      <div class="row mt-2" v-show="initResultsVisibility">
+        <h5>Upload speed</h5>
+        <InitTable v-bind:content="initResultsFiltered"></InitTable>
+      </div>
       <QueryInfo
           v-bind:tabsContent="parsedQueryInfo"
           v-bind:queryInfo="queryInfo"
@@ -133,10 +137,12 @@ import QueryDiff from "@/components/QueryDiff";
 import DatasetInfo from "./components/DatasetInfo";
 import Toast from "@/components/Toast.vue";
 import Preloader from "./components/Preloader";
+import InitTable from "@/components/InitTable.vue";
 
 export default {
   name: 'App',
   components: {
+    InitTable,
     Preloader,
     DatasetInfo,
     QueryDiff,
@@ -165,6 +171,9 @@ export default {
       retestEngines: [],
       resultsCount: 0,
       selectedTest: 0,
+      initResults: [],
+      initResultsFiltered: [],
+      initResultsVisibility: false,
       queryInfo: {},
       parsedQueryInfo: {},
       compareIds: [],
@@ -223,6 +232,26 @@ export default {
       this.shuffleSelectionIfNonSelected('tests');
 
       this.fillMemory();
+
+    },
+
+    getInitResultsData() {
+      let testName = this.getSelectedRow(this.tests)[0];
+      this.preloaderVisible = true;
+      this.initResultsVisibility = false;
+      axios
+          .get(this.getServerUrl + this.getApiPath + "?init_info=1&test_name=" + testName,
+              {timeout: this.apiCallTimeoutMs})
+          .then(response => {
+            this.initResults = response.data.result
+            this.filterEnginesInInitTable()
+            this.preloaderVisible = false;
+            this.initResultsVisibility = true;
+          })
+          .catch(error => {
+            this.showToast(error.message);
+            this.preloaderVisible = false;
+          });
     },
 
     getTestData(clearQueries = false) {
@@ -259,6 +288,19 @@ export default {
             this.showToast(error.message);
             this.preloaderVisible = false;
           });
+    },
+
+    filterEnginesInInitTable() {
+      let selectedEngines = this.getSelectedRow(this.engines)
+
+      this.initResultsFiltered = this.initResults.filter((row) => {
+        for (let selectedEngine of selectedEngines) {
+          if (selectedEngine.indexOf(row.engine_name) !== -1) {
+            return true;
+          }
+        }
+        return false;
+      });
     },
 
     shuffleSelectionIfNonSelected(type) {
@@ -334,6 +376,7 @@ export default {
       this.fillEngineGroups();
       this.getCacheSelection();
       this.getTestData();
+      this.getInitResultsData();
     },
 
     getCacheSelection() {
@@ -359,6 +402,7 @@ export default {
         }
         this.engineGroups[engineName[0]][engineFullName] = selected;
       }
+      this.filterEnginesInInitTable();
     },
 
     showToast(error) {
@@ -383,7 +427,7 @@ export default {
           })
     },
 
-    removeRetestEngine(skipRetestEngines = false){
+    removeRetestEngine(skipRetestEngines = false) {
       for (let key in this.engines) {
         for (let engineName in this.engines[key]) {
           if (engineName.indexOf('_retest') > 0) {
@@ -392,10 +436,10 @@ export default {
         }
       }
 
-      if (!skipRetestEngines){
+      if (!skipRetestEngines) {
         for (let engineKey in this.retestEngines) {
           for (let engineName in this.retestEngines[engineKey]) {
-            this.retestEngines[engineKey][engineName]=0;
+            this.retestEngines[engineKey][engineName] = 0;
           }
         }
       }
