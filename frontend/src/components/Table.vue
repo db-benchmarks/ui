@@ -135,7 +135,9 @@
 
                 </template>
                 <template v-else>
-                  {{ key }}
+                  <span class="flex-grow-1">{{ capitalize(key.type) }}</span>
+                  <QueryError v-bind:type="key.type"
+                              v-bind:message="key.message"></QueryError>
                 </template>
               </template>
             </div>
@@ -180,9 +182,10 @@ import InfoIcon from "@/components/InfoIcon";
 import QuestionIcon from "@/components/QuestionIcon";
 import DatasetInfoIcon from "./DatasetInfoIcon";
 import RetestIcon from "./RetestIcon";
+import QueryError from "@/components/QueryError.vue";
 
 export default {
-  components: {RetestIcon, DatasetInfoIcon, QuerySelector, Bar, DiffIcon, InfoIcon, QuestionIcon},
+  components: {RetestIcon, DatasetInfoIcon, QuerySelector, Bar, DiffIcon, InfoIcon, QuestionIcon, QueryError},
   props: {
     results: {
       type: Array,
@@ -370,6 +373,9 @@ export default {
         }
       }
     },
+    capitalize(text){
+      return text[0].toUpperCase()+text.slice(1)
+    },
     checkCheckSum(row, id) {
       return this.checksumRelations[row][id] !== null;
     },
@@ -488,13 +494,13 @@ export default {
         let skipped = 0, i = 0;
         engineKey = parseInt(engineKey);
         for (let rowId in this.results) {
-          if (this.results[rowId][(engineKey + 1)] == '-') {
+          if (this.results[rowId][(engineKey + 1)] instanceof Object) {
             skipped++;
             this.checkedQueries[rowId] = false;
           }
           i++;
         }
-        if (skipped == i) {
+        if (skipped === i) {
 
           rowSum.geomean[engineKey + 1] = {
             percent: 0,
@@ -617,7 +623,7 @@ export default {
 
         dataCols.forEach((row) => {
           let byRow = this.getGroupByRow(row.column - 1);
-          if (row.value === '-') {
+          if (row.value instanceof Object) {
             row.value = maxValue[byRow]
           }
         })
@@ -637,10 +643,9 @@ export default {
           let obj = {}
 
           let byRow = this.getGroupByRow(item.column - 1);
-          if (this.results[rowId][item.column] === '-') {
-            obj = {color: "RGB(214,214,214)"};
+          if (this.results[rowId][item.column] instanceof Object) {
+            obj = {color: "RGB(127,127,127)"};
           } else {
-
 
             let currentRelation = item.value / minValue[byRow]
             currentRelation = Math.round((currentRelation + Number.EPSILON) * 100) / 100
@@ -648,7 +653,7 @@ export default {
             obj['relation'] = currentRelation;
 
             if (skip) {
-              obj['color'] = "RGB(214,214,214)"
+              obj['color'] = "RGB(127,127,127)"
             } else {
               if (currentRelation <= 1.03) {
                 obj['color'] = "RGB(0, 255, 0)"; // green
@@ -696,7 +701,12 @@ export default {
       return id % this.groupedCount;
     },
     hasFailsInRow(rowId) {
-      return this.results[rowId].includes('-');
+      for (let row of this.results[rowId]){
+        if (row instanceof Object){
+          return true;
+        }
+      }
+      return false;
     }
   }
 }

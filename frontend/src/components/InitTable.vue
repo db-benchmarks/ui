@@ -25,7 +25,7 @@ export default {
 
       return result.trim();
     },
-    formatHumanReadableMegaBytes: function (mb){
+    formatHumanReadableMegaBytes: function (mb) {
       // Define the size units in megabytes
       const units = ['MB', 'GB', 'TB'];
 
@@ -72,13 +72,21 @@ export default {
           <ul>
             <li><span class="avg">Average:</span> {{ formatHumanReadableMegaBytes(row.metrics.ram.average) }}</li>
             <li><span class="median">Median:</span> {{ formatHumanReadableMegaBytes(row.metrics.ram.median) }}</li>
-            <li><span class="percentile">95 percentile:</span> {{ formatHumanReadableMegaBytes(row.metrics.ram["95p"]) }}</li>
+            <li><span class="percentile">95 percentile:</span> {{
+                formatHumanReadableMegaBytes(row.metrics.ram["95p"])
+              }}
+            </li>
           </ul>
         </td>
         <td>
           <ul>
-            <li><span class="avg">Read:</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.read.total) }}</li>
-            <li><span class="avg">Write:</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.write.total) }}</li>
+            <template v-if="row.metrics.disc.read === undefined">
+              <li><span class="avg">Total (r+w):</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.total) }}</li>
+            </template>
+            <template v-else>
+              <li><span class="avg">Read:</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.read.total) }}</li>
+              <li><span class="avg">Write:</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.write.total) }}</li>
+            </template>
           </ul>
         </td>
       </tr>

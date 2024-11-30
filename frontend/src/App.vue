@@ -167,6 +167,7 @@ export default {
       fullServerInfo: [],
       memory: [],
       queries: [],
+      // A list of checksums of queries currently selected for comparison
       checksums: {},
       retestEngines: [],
       resultsCount: 0,
@@ -176,6 +177,7 @@ export default {
       initResultsVisibility: false,
       queryInfo: {},
       parsedQueryInfo: {},
+      // A list of ids of queries currently selected for comparison
       compareIds: [],
       diff: {},
       datasetInfo: {},
@@ -532,7 +534,7 @@ export default {
     applySelection(clearQueries = true) {
       this.checksums = {};
       this.compareIds = [];
-      let data = this.results[this.getSelectedRow(this.tests)[0]][this.getSelectedRow(this.memory)[0]];
+      let testResults = this.results[this.getSelectedRow(this.tests)[0]][this.getSelectedRow(this.memory)[0]];
 
       let results = [];
       let selectedEngines = this.getSelectedRow(this.engines);
@@ -540,8 +542,11 @@ export default {
 
       let selectedCache = this.getSelectedRow(this.cache);
       let i = 0;
-      for (let dataKey in data) {
-        let row = [data[dataKey]['query']];
+
+      // Iterate through the hashes of test queries (each query stores results from different engines)
+      for (let queryHash in testResults) {
+
+        let queryString = [testResults[queryHash]['query']];
         for (let engine in selectedEngines) {
 
 
@@ -552,32 +557,35 @@ export default {
 
           let checksumValue = -1;
           let compareId = null;
-          if (data[dataKey][selectedEngines[engine]] !== undefined) {
-            checksumValue = data[dataKey][selectedEngines[engine]]['checksum'];
-            compareId = data[dataKey][selectedEngines[engine]]['id'];
+
+          let engineName = selectedEngines[engine];
+
+          if (testResults[queryHash][engineName] !== undefined) {
+            checksumValue = testResults[queryHash][engineName]['checksum'];
+            compareId = testResults[queryHash][engineName]['id'];
+          } else {
+            continue;
           }
 
-          checkSum[selectedEngines[engine]] = checksumValue;
+          checkSum[engineName] = checksumValue;
           this.checksums[i] = checkSum;
 
           if (this.compareIds[i] === undefined) {
             this.compareIds[i] = {};
           }
-          this.compareIds[i][selectedEngines[engine]] = compareId;
+          this.compareIds[i][engineName] = compareId;
 
           for (let cache in selectedCache) {
             let value;
-            try {
-              value = data[dataKey][selectedEngines[engine]][selectedCache[cache]];
-            } catch (e) {
-              value = '-';
+            value = testResults[queryHash][engineName][selectedCache[cache]];
+            if (value === -1) {
+              value = testResults[queryHash][engineName]['error'];
             }
-            row = row.concat(value);
+            queryString = queryString.concat(value);
           }
         }
 
-
-        results.push(row)
+        results.push(queryString)
         i++;
       }
 

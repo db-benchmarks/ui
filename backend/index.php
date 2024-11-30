@@ -244,7 +244,6 @@ class DataGetter {
 		$query = "SELECT " .
 		         "         id, test_name, memory, engine_name, type, retest " .
 		         "     FROM results " .
-		         "     WHERE error is NULL and query_timeout = 0 " .
 			 "     GROUP BY test_name, memory, engine_name, type, retest " .
 			 "     ORDER BY test_name ASC, engine_name ASC, type ASC, memory ASC " .
 		         "     LIMIT 1000000 " .
@@ -288,8 +287,7 @@ class DataGetter {
 		$query = "SELECT" .
 		         "         id, test_name, test_info, server_info" .
 		         "     FROM results " .
-		         "WHERE error is NULL AND query_timeout = 0 " .
-		         "    AND test_name = '" . $this->sanitizeTestName( $testName ) . "' " .
+		         "WHERE test_name = '" . $this->sanitizeTestName( $testName ) . "' " .
 		         "LIMIT 1";
 
 		$result = $this->request( $query );
@@ -366,10 +364,10 @@ class DataGetter {
 		$query
 			= "SELECT " .
 			  "    id, test_name, memory, original_query, engine_name, type, avg(fastest), avg(slowest), " .
-			  "    avg(avg_fastest), min(checksum), max(query_timeout), retest, group_concat(error) " .
+			  "    avg(avg_fastest), min(checksum), max(query_timeout), retest, group_concat(error), error  " .
 			  "FROM results " .
-			  "WHERE error is NULL AND query_timeout = 0 " .
-			  "    AND test_name = '" . $this->sanitizeTestName( $testName ) . "'" .
+			  "WHERE " .
+			  "    test_name = '" . $this->sanitizeTestName( $testName ) . "'" .
 			  "    AND memory = " . (int) $memory . " " .
 			  "GROUP BY test_name, engine_name, type, original_query, memory, retest " .
 			  "ORDER BY original_query ASC " .
@@ -454,7 +452,8 @@ class DataGetter {
 					'fastest'  => $row['avg(fastest)'],
 					'fast_avg' => $row['avg(avg_fastest)'],
 					'checksum' => $row['min(checksum)'],
-					'id'       => $id,
+                    'error'    => $row['error'],
+                    'id'       => $id,
 				];
 			}
 
