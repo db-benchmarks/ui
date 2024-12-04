@@ -1,6 +1,6 @@
 <script>
 export default {
-  name: "InitTable",
+  name: "IngestingTable",
   props: {
     content: {
       required: true

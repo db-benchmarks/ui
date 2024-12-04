@@ -108,9 +108,9 @@
                v-on:showRetestResults="showRetestResults"
         />
       </div>
-      <div class="row mt-2" v-show="initResultsVisibility">
+      <div class="row mt-2" v-show="ingestingResultsVisibility">
         <h5>Upload speed</h5>
-        <InitTable v-bind:content="initResultsFiltered"></InitTable>
+        <IngestingTable v-bind:content="ingestingResultsFiltered"></IngestingTable>
       </div>
       <QueryInfo
           v-bind:tabsContent="parsedQueryInfo"
@@ -137,12 +137,12 @@ import QueryDiff from "@/components/QueryDiff";
 import DatasetInfo from "./components/DatasetInfo";
 import Toast from "@/components/Toast.vue";
 import Preloader from "./components/Preloader";
-import InitTable from "@/components/InitTable.vue";
+import IngestingTable from "@/components/IngestingTable.vue";
 
 export default {
   name: 'App',
   components: {
-    InitTable,
+    IngestingTable,
     Preloader,
     DatasetInfo,
     QueryDiff,
@@ -172,9 +172,9 @@ export default {
       retestEngines: [],
       resultsCount: 0,
       selectedTest: 0,
-      initResults: [],
-      initResultsFiltered: [],
-      initResultsVisibility: false,
+      ingestingResults: [],
+      ingestingResultsFiltered: [],
+      ingestingResultsVisibility: false,
       queryInfo: {},
       parsedQueryInfo: {},
       // A list of ids of queries currently selected for comparison
@@ -237,18 +237,19 @@ export default {
 
     },
 
-    getInitResultsData() {
+    getIngestingResultsData() {
       let testName = this.getSelectedRow(this.tests)[0];
       this.preloaderVisible = true;
-      this.initResultsVisibility = false;
+      this.ingestingResultsVisibility = false;
       axios
-          .get(this.getServerUrl + this.getApiPath + "?init_info=1&test_name=" + testName,
+          .get(this.getServerUrl + this.getApiPath + "?ingesting_info=1&test_name=" + testName,
               {timeout: this.apiCallTimeoutMs})
           .then(response => {
-            this.initResults = response.data.result
-            this.filterEnginesInInitTable()
+            this.ingestingResults = response.data.result
+            if (this.ingestingResults.length >0){
+              this.filterEnginesInIngestingTable()
+            }
             this.preloaderVisible = false;
-            this.initResultsVisibility = true;
           })
           .catch(error => {
             this.showToast(error.message);
@@ -292,10 +293,10 @@ export default {
           });
     },
 
-    filterEnginesInInitTable() {
+    filterEnginesInIngestingTable() {
       let selectedEngines = this.getSelectedRow(this.engines)
 
-      this.initResultsFiltered = this.initResults.filter((row) => {
+      this.ingestingResultsFiltered = this.ingestingResults.filter((row) => {
         for (let selectedEngine of selectedEngines) {
           if (selectedEngine.indexOf(row.engine_name) !== -1) {
             return true;
@@ -303,6 +304,10 @@ export default {
         }
         return false;
       });
+
+      if (this.ingestingResultsFiltered.length > 0){
+        this.ingestingResultsVisibility = true;
+      }
     },
 
     shuffleSelectionIfNonSelected(type) {
@@ -378,7 +383,7 @@ export default {
       this.fillEngineGroups();
       this.getCacheSelection();
       this.getTestData();
-      this.getInitResultsData();
+      this.getIngestingResultsData();
     },
 
     getCacheSelection() {
@@ -404,7 +409,7 @@ export default {
         }
         this.engineGroups[engineName[0]][engineFullName] = selected;
       }
-      this.filterEnginesInInitTable();
+      this.filterEnginesInIngestingTable();
     },
 
     showToast(error) {
