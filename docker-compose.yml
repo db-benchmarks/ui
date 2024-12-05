@@ -53,7 +53,7 @@ services:
 
   db:
     container_name: benchmarks_db
-    image: manticoresearch/manticore:6.0.4
+    image: manticoresearch/manticore:6.3.8
     restart: always
     environment:
       - EXTRA=1
