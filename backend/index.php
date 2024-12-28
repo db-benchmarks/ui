@@ -402,10 +402,10 @@ class DataGetter {
 			$queryId = null;
 			foreach ( $result['hits']['hits'] as $row ) {
 				if ( $queryId === null ) {
-					$queryId = $row['_id'];
+					$queryId = $row['_id'].'n';
 				}
 
-				$id                         = $row['_id'];
+				$id                         = $row['_id'].'n';
 				$row                        = $row['_source'];
 				$tests[ $row['test_name'] ] = 0;
 				$memory[ $row['memory'] ]   = 0;
