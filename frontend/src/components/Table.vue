@@ -101,6 +101,7 @@
                   &nbsp;<InfoIcon v-bind:row="row"
                                   v-bind:id="id"
                                   v-bind:hasDiff="true"
+                                  v-bind:selected-engines-count="engines.length"
                                   v-on:showInfo="emitShowInfo"
                                   v-bind:class="checksumRelations[row][id]"
                                   v-bind:stroke-color="getTextColor(row, id)">
