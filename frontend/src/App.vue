@@ -215,7 +215,9 @@ export default {
           text += '</ul>';
           this.parsedQueryInfo[tab] = text;
         } else {
-          this.parsedQueryInfo[tab] = this.queryInfo[tab];
+          let escape = document.createElement('textarea');
+          escape.textContent = this.queryInfo[tab];
+          this.parsedQueryInfo[tab] = escape.innerHTML;
         }
       }
     }
