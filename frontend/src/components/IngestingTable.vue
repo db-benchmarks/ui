@@ -6,6 +6,23 @@ export default {
       required: true
     }
   },
+  computed: {
+    minExecutionTime() {
+      return Math.min(...this.content.map(row => row.init_time));
+    },
+    minCPU95p() {
+      return Math.min(...this.content.map(row => row.metrics.cpu["95p"]));
+    },
+    minRAM95p() {
+      return Math.min(...this.content.map(row => row.metrics.ram["95p"]));
+    },
+    minIORead() {
+      return Math.min(...this.content.map(row => row.metrics.disc.read?.total || Infinity));
+    },
+    minIOWrite() {
+      return Math.min(...this.content.map(row => row.metrics.disc.write?.total || Infinity));
+    }
+  },
   methods: {
     formatHumanReadableTime: function (seconds) {
       const hours = Math.floor(seconds / 3600);
@@ -26,66 +43,89 @@ export default {
       return result.trim();
     },
     formatHumanReadableMegaBytes: function (mb) {
-      // Define the size units in megabytes
       const units = ['MB', 'GB', 'TB'];
-
-      let result = '';
       let unitIndex = 0;
-
-      // Convert MB to higher units (GB, TB, etc.)
       while (mb >= 1024 && unitIndex < units.length - 1) {
         mb = mb / 1024;
         unitIndex++;
       }
-
-      // Format the result
-      result = mb.toFixed(2) + ' ' + units[unitIndex];
-
-      return result;
+      return mb.toFixed(2) + ' ' + units[unitIndex];
     }
   }
-}
+};
 </script>
 
 <template>
   <table class="table init-table">
     <tr>
       <th>Engine</th>
-      <th>Execution time</th>
-      <th>CPU LOAD (cores)</th>
-      <th>RAM</th>
-      <th>IO (total)</th>
+      <th v-tooltip="'Lower is better'">Execution time</th>
+      <th v-tooltip="'Lower is better'">CPU LOAD (cores)</th>
+      <th v-tooltip="'Lower is better'">RAM</th>
+      <th v-tooltip="'Lower is better'">IO (total)</th>
     </tr>
 
     <template v-for="(row, key) in content">
       <tr :key="key">
-        <td>{{ row.engine_name }}{{ row.type.length > 0 ? "_" + row.type : "" }}:{{ row.version }}</td>
-        <td>{{ formatHumanReadableTime(parseInt(row.init_time)) }}</td>
+        <td>
+          <span :class="{'text-bold': row.init_time === minExecutionTime}">
+            {{ row.engine_name }}{{ row.type.length > 0 ? "_" + row.type : "" }}:{{ row.version }}
+          </span>
+        </td>
+
+        <td>
+          <span :class="{'text-green': row.init_time === minExecutionTime, 'text-red': true}">
+            {{ formatHumanReadableTime(parseInt(row.init_time)) }}
+          </span>
+        </td>
+
+        <!-- CPU Load -->
         <td>
           <ul>
             <li><span class="avg">Average:</span> {{ row.metrics.cpu.average }}</li>
             <li><span class="median">Median:</span> {{ row.metrics.cpu.median }}</li>
-            <li><span class="percentile">95 percentile:</span> {{ row.metrics.cpu["95p"] }}</li>
+            <li :class="{'text-green': row.metrics.cpu['95p'] === minCPU95p, 'text-red': true}">
+              <span class="percentile">95 percentile:</span>
+              <span>
+                {{ row.metrics.cpu["95p"] }}
+              </span>
+            </li>
           </ul>
         </td>
+
+        <!-- RAM Load -->
         <td>
           <ul>
             <li><span class="avg">Average:</span> {{ formatHumanReadableMegaBytes(row.metrics.ram.average) }}</li>
             <li><span class="median">Median:</span> {{ formatHumanReadableMegaBytes(row.metrics.ram.median) }}</li>
-            <li><span class="percentile">95 percentile:</span> {{
-                formatHumanReadableMegaBytes(row.metrics.ram["95p"])
-              }}
+            <li>
+              <span class="percentile">95 percentile:</span>
+              <span :class="{'text-green': row.metrics.ram['95p'] === minRAM95p, 'text-red': true}">
+                {{ formatHumanReadableMegaBytes(row.metrics.ram["95p"]) }}
+              </span>
             </li>
           </ul>
         </td>
+
+        <!-- IO Read/Write -->
         <td>
           <ul>
             <template v-if="row.metrics.disc.read === undefined">
               <li><span class="avg">Total (r+w):</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.total) }}</li>
             </template>
             <template v-else>
-              <li><span class="avg">Read:</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.read.total) }}</li>
-              <li><span class="avg">Write:</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.write.total) }}</li>
+              <li>
+                <span class="avg">Read:</span>
+                <span :class="{'text-green': row.metrics.disc.read.total === minIORead, 'text-red': true}">
+                  {{ formatHumanReadableMegaBytes(row.metrics.disc.read.total) }}
+                </span>
+              </li>
+              <li>
+                <span class="avg">Write:</span>
+                <span :class="{'text-green': row.metrics.disc.write.total === minIOWrite, 'text-red': true}">
+                  {{ formatHumanReadableMegaBytes(row.metrics.disc.write.total) }}
+                </span>
+              </li>
             </template>
           </ul>
         </td>
@@ -106,5 +146,17 @@ export default {
 .init-table .avg, .median, .percentile {
   font-size: small;
   color: #454545;
+}
+
+.text-red {
+  color: red;
+}
+
+.text-green{
+  color: green;
+}
+
+.text-bold{
+  font-weight: bold;
 }
 </style>
