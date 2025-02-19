@@ -109,7 +109,7 @@
         />
       </div>
       <div class="row mt-2" v-show="ingestingResultsVisibility">
-        <h5>Upload speed</h5>
+        <h5>Data Ingestion Performance</h5>
         <IngestingTable v-bind:content="ingestingResultsFiltered"></IngestingTable>
       </div>
       <QueryInfo
