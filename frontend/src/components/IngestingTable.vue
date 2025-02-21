@@ -7,20 +7,63 @@ export default {
     }
   },
   computed: {
+    // Execution Time
     minExecutionTime() {
       return Math.min(...this.content.map(row => row.init_time));
     },
+    maxExecutionTime() {
+      return Math.max(...this.content.map(row => row.init_time));
+    },
+    // CPU
     minCPU95p() {
       return Math.min(...this.content.map(row => row.metrics.cpu["95p"]));
     },
+    maxCPU95p() {
+      return Math.max(...this.content.map(row => row.metrics.cpu["95p"]));
+    },
+    minCPUAvg() {
+      return Math.min(...this.content.map(row => row.metrics.cpu.average));
+    },
+    maxCPUAvg() {
+      return Math.max(...this.content.map(row => row.metrics.cpu.average));
+    },
+    minCPUMedian() {
+      return Math.min(...this.content.map(row => row.metrics.cpu.median));
+    },
+    maxCPUMedian() {
+      return Math.max(...this.content.map(row => row.metrics.cpu.median));
+    },
+    // RAM
     minRAM95p() {
       return Math.min(...this.content.map(row => row.metrics.ram["95p"]));
     },
+    maxRAM95p() {
+      return Math.max(...this.content.map(row => row.metrics.ram["95p"]));
+    },
+    minRAMAvg() {
+      return Math.min(...this.content.map(row => row.metrics.ram.average));
+    },
+    maxRAMAvg() {
+      return Math.max(...this.content.map(row => row.metrics.ram.average));
+    },
+    minRAMMedian() {
+      return Math.min(...this.content.map(row => row.metrics.ram.median));
+    },
+    maxRAMMedian() {
+      return Math.max(...this.content.map(row => row.metrics.ram.median));
+    },
+    // IO
     minIORead() {
       return Math.min(...this.content.map(row => row.metrics.disc.read?.total || Infinity));
     },
+    maxIORead() {
+      return Math.max(...this.content.map(row => row.metrics.disc.read?.total || -Infinity));
+    },
     minIOWrite() {
       return Math.min(...this.content.map(row => row.metrics.disc.write?.total || Infinity));
+    },
+    maxIOWrite() {
+      return Math.max(...this.content.map(row => row.metrics.disc.write?.total || -Infinity));
     }
   },
   methods: {
@@ -68,13 +111,14 @@ export default {
     <template v-for="(row, key) in content">
       <tr :key="key">
         <td>
-          <span :class="{'text-bold': row.init_time === minExecutionTime}">
-            {{ row.engine_name }}{{ row.type.length > 0 ? "_" + row.type : "" }}:{{ row.version }}
-          </span>
+          {{ row.engine_name }}{{ row.type.length > 0 ? "_" + row.type : "" }}:{{ row.version }}
         </td>
 
         <td>
-          <span :class="{'text-green': row.init_time === minExecutionTime, 'text-red': true}">
+          <span :class="{
+            'text-green': row.init_time === minExecutionTime,
+            'text-red': row.init_time === maxExecutionTime
+          }">
             {{ formatHumanReadableTime(parseInt(row.init_time)) }}
           </span>
         </td>
@@ -82,9 +126,24 @@ export default {
         <!-- CPU Load -->
         <td>
           <ul>
-            <li><span class="avg">Average:</span> {{ row.metrics.cpu.average }}</li>
-            <li><span class="median">Median:</span> {{ row.metrics.cpu.median }}</li>
-            <li :class="{'text-green': row.metrics.cpu['95p'] === minCPU95p, 'text-red': true}">
+            <li :class="{
+                'text-green': row.metrics.cpu.average === minCPUAvg,
+                'text-red': row.metrics.cpu.average === maxCPUAvg
+              }">
+              <span class="avg">Average:</span>
+                {{ row.metrics.cpu.average }}
+            </li>
+            <li :class="{
+                'text-green': row.metrics.cpu.median === minCPUMedian,
+                'text-red': row.metrics.cpu.median === maxCPUMedian
+              }">
+              <span class="median">Median:</span>
+                {{ row.metrics.cpu.median }}
+            </li>
+            <li :class="{
+              'text-green': row.metrics.cpu['95p'] === minCPU95p,
+              'text-red': row.metrics.cpu['95p'] === maxCPU95p
+            }">
               <span class="percentile">95 percentile:</span>
               <span>
                 {{ row.metrics.cpu["95p"] }}
@@ -96,13 +155,29 @@ export default {
         <!-- RAM Load -->
         <td>
           <ul>
-            <li><span class="avg">Average:</span> {{ formatHumanReadableMegaBytes(row.metrics.ram.average) }}</li>
-            <li><span class="median">Median:</span> {{ formatHumanReadableMegaBytes(row.metrics.ram.median) }}</li>
-            <li>
+            <li :class="{
+                'text-green': row.metrics.ram.average === minRAMAvg,
+                'text-red': row.metrics.ram.average === maxRAMAvg
+              }">
+              <span class="avg">Average:</span>
+                {{ formatHumanReadableMegaBytes(row.metrics.ram.average) }}
+            </li>
+            <li :class="{
+                'text-green': row.metrics.ram.median === minRAMMedian,
+                'text-red': row.metrics.ram.median === maxRAMMedian
+              }">
+              <span class="median">Median:</span>
+
+                {{ formatHumanReadableMegaBytes(row.metrics.ram.median) }}
+            </li>
+            <li :class="{
+                'text-green': row.metrics.ram['95p'] === minRAM95p,
+                'text-red': row.metrics.ram['95p'] === maxRAM95p
+              }">
               <span class="percentile">95 percentile:</span>
-              <span :class="{'text-green': row.metrics.ram['95p'] === minRAM95p, 'text-red': true}">
+
                 {{ formatHumanReadableMegaBytes(row.metrics.ram["95p"]) }}
-              </span>
+
             </li>
           </ul>
         </td>
@@ -114,17 +189,23 @@ export default {
               <li><span class="avg">Total (r+w):</span> {{ formatHumanReadableMegaBytes(row.metrics.disc.total) }}</li>
             </template>
             <template v-else>
-              <li>
+              <li :class="{
+                  'text-green': row.metrics.disc.read.total === minIORead,
+                  'text-red': row.metrics.disc.read.total === maxIORead
+                }">
                 <span class="avg">Read:</span>
-                <span :class="{'text-green': row.metrics.disc.read.total === minIORead, 'text-red': true}">
+
                   {{ formatHumanReadableMegaBytes(row.metrics.disc.read.total) }}
-                </span>
+
               </li>
-              <li>
+              <li :class="{
+                  'text-green': row.metrics.disc.write.total === minIOWrite,
+                  'text-red': row.metrics.disc.write.total === maxIOWrite
+                }">
                 <span class="avg">Write:</span>
-                <span :class="{'text-green': row.metrics.disc.write.total === minIOWrite, 'text-red': true}">
+
                   {{ formatHumanReadableMegaBytes(row.metrics.disc.write.total) }}
-                </span>
+
               </li>
             </template>
           </ul>
@@ -152,11 +233,7 @@ export default {
   color: red;
 }
 
-.text-green{
+.text-green {
   color: green;
-}
-
-.text-bold{
-  font-weight: bold;
 }
 </style>
