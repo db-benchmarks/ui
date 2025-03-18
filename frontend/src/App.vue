@@ -248,7 +248,7 @@ export default {
               {timeout: this.apiCallTimeoutMs})
           .then(response => {
             this.ingestingResults = response.data.result
-            if (this.ingestingResults.length >0){
+            if (this.ingestingResults.length > 0) {
               this.filterEnginesInIngestingTable()
             }
             this.preloaderVisible = false;
@@ -299,17 +299,29 @@ export default {
       let selectedEngines = this.getSelectedRow(this.engines)
 
       this.ingestingResultsFiltered = this.ingestingResults.filter((row) => {
+
         for (let selectedEngine of selectedEngines) {
-          if (selectedEngine.indexOf(row.engine_name) !== -1) {
-            return true;
+          let fullName = this.assembleName(row.engine_name, row.version, row.type)
+          if (fullName === selectedEngine) {
+            return true
           }
         }
         return false;
       });
 
-      if (this.ingestingResultsFiltered.length > 0){
+      if (this.ingestingResultsFiltered.length > 0) {
         this.ingestingResultsVisibility = true;
       }
+    },
+
+    assembleName(engineName, version, type) {
+      if (type.length > 0) {
+        type = "_" + type
+      }
+      if (version.length > 0) {
+        version = "_" + version
+      }
+      return engineName + type + version
     },
 
     shuffleSelectionIfNonSelected(type) {
