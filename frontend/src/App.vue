@@ -110,6 +110,7 @@
       </div>
       <div class="row mt-2" v-show="ingestingResultsVisibility">
         <h5>Data Ingestion Performance</h5>
+        <p class="ingestion-disclaimer">The primary focus of these benchmarks is search performance, including query latency, concurrency, and sharding behavior. Data ingestion performance is shown for reference only. It was measured using a single loading attempt and was not subject to repeated runs or tuning, so the results should not be interpreted as a comprehensive evaluation of bulk-loading capabilities.</p>
         <IngestingTable v-bind:content="ingestingResultsFiltered"></IngestingTable>
       </div>
       <QueryInfo
@@ -767,9 +768,25 @@ h4, .h4 {
   font-weight: bold;
 }
 
+.info-tooltip-icon {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 black;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 .caption {
   font-weight: 600;
   margin: 10px 20px;
+}
+
+.ingestion-disclaimer {
+  color: #4a4a4a;
+  font-size: 0.95rem;
+  margin: 0 0 10px;
 }
 
 
