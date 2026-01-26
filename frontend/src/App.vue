@@ -6,7 +6,6 @@
 * https://www.gnu.org/licenses/agpl-3.0.txt
 */
 <template>
-
   <div id="app">
     <Toast v-bind:error="errorMessage"></Toast>
     <Preloader v-bind:visible="preloaderVisible"></Preloader>
@@ -46,17 +45,39 @@
     </div>
     <div class="container">
       <div class="row mt-2">
-        <div class="col-1">
+        <div class="col-12 col-md-2">
+          <h4>Benchmark</h4>
+        </div>
+        <div class="col-12 col-md-10">
+          <ButtonGroup v-bind:items="benchmarks"
+                       v-bind:switch="true"
+                       v-bind:capitalize="true"
+                       v-on:changed="handleBenchmarkChange"/>
+        </div>
+      </div>
+      <div class="row mt-2" v-if="isFulltextView">
+        <div class="col-12 col-md-1">
           <h4>Test</h4>
         </div>
-        <div class="col-11">
+        <div class="col-12 col-md-11">
           <ButtonGroup v-bind:items="tests"
                        v-bind:switch="true"
                        v-bind:capitalize="false"
                        v-on:changed="cleanUrl();fillMemory();"/>
         </div>
       </div>
-      <div class="row mt-2">
+      <div class="row mt-2" v-else>
+        <div class="col-12 col-md-1">
+          <h4>Dataset</h4>
+        </div>
+        <div class="col-12 col-md-11">
+          <ButtonGroup v-bind:items="vectorDatasets"
+                       v-bind:switch="true"
+                       v-bind:capitalize="false"
+                       v-on:changed="onVectorDatasetChanged"/>
+        </div>
+      </div>
+      <div class="row mt-2" v-if="isFulltextView">
         <div class="col">
           <TestInfo v-bind:test-info="testsInfo"
                     v-bind:short-server-info="shortServerInfo"
@@ -67,13 +88,19 @@
       <div class="row mt-4">
         <div class="col-12">
           <h4>Engines</h4>
-          <EngineGroup v-bind:groups="engineGroups"
+          <EngineGroup v-if="isFulltextView"
+                       v-bind:groups="engineGroups"
                        v-bind:items="engines"
                        v-on:changed="fillEngineGroups();applySelection(false)">
           </EngineGroup>
+          <EngineGroup v-else
+                       v-bind:groups="vectorEngineGroups"
+                       v-bind:items="vectorEngines"
+                       v-on:changed="onVectorEnginesChanged">
+          </EngineGroup>
         </div>
       </div>
-      <div class="row mt-4">
+      <div class="row mt-4" v-if="isFulltextView">
         <div class="col-5">
           <h4>RAM limit</h4>
           <ButtonGroup v-bind:items="memory"
@@ -90,36 +117,36 @@
                        v-bind:capitalize="true "
                        v-on:changed="applySelection(false)"/>
         </div>
-
-
       </div>
 
-      <div class="row">
-        <Table v-bind:engines="getSelectedRow(this.engines)"
-               v-bind:cache="prepareCacheForTable"
-               v-bind:results="filteredResults"
-               v-bind:check-sum="checksums"
-               v-bind:retestEngines="retestEngines"
-               v-bind:checkedQueries.sync="queries"
-               v-on:update:checked="modifyUrl()"
-               v-on:showDiff="showDiff"
-               v-on:showInfo="showInfo"
-               v-on:showDatasetInfo="showDatasetInfo"
-               v-on:showRetestResults="showRetestResults"
-        />
-      </div>
-      <div class="row mt-2" v-show="ingestingResultsVisibility">
-        <h5>Data Ingestion Performance</h5>
-        <p class="ingestion-disclaimer">The primary focus of these benchmarks is search performance, including query latency, concurrency, and sharding behavior. Data ingestion performance is shown for reference only. It was measured using a single loading attempt and was not subject to repeated runs or tuning, so the results should not be interpreted as a comprehensive evaluation of bulk-loading capabilities.</p>
-        <IngestingTable v-bind:content="ingestingResultsFiltered"></IngestingTable>
-      </div>
-      <QueryInfo
-          v-bind:tabsContent="parsedQueryInfo"
-          v-bind:queryInfo="queryInfo"
-          v-bind:engineInQueryInfo="engineInQueryInfo"
-      ></QueryInfo>
-      <QueryDiff v-bind:diff="diff"></QueryDiff>
-      <DatasetInfo v-bind:tabs-content="datasetInfo" v-bind:engine="engineInDatasetInfo"></DatasetInfo>
+      <FulltextBenchmark v-if="isFulltextView"
+                         v-bind:engines="getSelectedRow(this.engines)"
+                         v-bind:cache="prepareCacheForTable"
+                         v-bind:filtered-results="filteredResults"
+                         v-bind:checksums="checksums"
+                         v-bind:retest-engines="retestEngines"
+                         v-bind:queries="queries"
+                         v-bind:ingesting-results-filtered="ingestingResultsFiltered"
+                         v-bind:ingesting-results-visibility="ingestingResultsVisibility"
+                         v-bind:parsed-query-info="parsedQueryInfo"
+                         v-bind:query-info="queryInfo"
+                         v-bind:engine-in-query-info="engineInQueryInfo"
+                         v-bind:dataset-info="datasetInfo"
+                         v-bind:engine-in-dataset-info="engineInDatasetInfo"
+                         v-bind:diff="diff"
+                         v-on:update:checked="modifyUrl()"
+                         v-on:showDiff="showDiff"
+                         v-on:showInfo="showInfo"
+                         v-on:showDatasetInfo="showDatasetInfo"
+                         v-on:showRetestResults="showRetestResults"
+      />
+      <VectorBenchmark v-else
+                       v-bind:selected-dataset="selectedVectorDataset"
+                       v-bind:selected-engines="selectedVectorEngines"
+                       v-bind:initial-precision="vectorPrecision"
+                       v-bind:initial-plot-metric="vectorPlotMetric"
+                       v-on:meta-ready="handleVectorMeta"
+                       v-on:state-change="handleVectorStateChange"/>
       <footer class="my-5 pt-5 text-muted text-center text-small">
       </footer>
     </div>
@@ -128,36 +155,36 @@
 
 <script>
 import axios from "axios";
-import Table from "@/components/Table";
 import EngineGroup from "@/components/EngineGroup";
 import ButtonGroup from "@/components/ButtonGroup";
 import TestInfo from "@/components/TestInfo";
-import QueryInfo from "@/components/QueryInfo";
 import JQuery from 'jquery'
-import QueryDiff from "@/components/QueryDiff";
-import DatasetInfo from "./components/DatasetInfo";
 import Toast from "@/components/Toast.vue";
 import Preloader from "./components/Preloader";
-import IngestingTable from "@/components/IngestingTable.vue";
+import FulltextBenchmark from "@/components/FulltextBenchmark.vue";
+import VectorBenchmark from "@/components/VectorBenchmark.vue";
 
 export default {
   name: 'App',
   components: {
-    IngestingTable,
     Preloader,
-    DatasetInfo,
-    QueryDiff,
-    QueryInfo,
     TestInfo,
     ButtonGroup,
     EngineGroup,
-    Table,
-    Toast
+    Toast,
+    FulltextBenchmark,
+    VectorBenchmark
   },
   data() {
     return {
+      benchmarks: [{"fulltext": 1}, {"vector": 0}],
+      vectorPrecision: 0.9,
+      vectorPlotMetric: 'rps',
       engines: [],
       engineGroups: {},
+      vectorDatasets: [],
+      vectorEngines: [],
+      vectorEngineGroups: {},
       results: {},
       initData: {},
       errorMessage: "",
@@ -187,9 +214,12 @@ export default {
       engineInDatasetInfo: null,
       apiCallTimeoutMs: 20000,
       preloaderVisible: false,
+      vectorUrlState: null,
     }
   },
   created: function () {
+    this.vectorUrlState = this.getVectorStateFromUrl();
+    this.applyBenchmarkFromUrl();
     this.preloaderVisible = true;
     axios
         .get(this.getServerUrl + this.getApiPath, {timeout: this.apiCallTimeoutMs})
@@ -224,6 +254,154 @@ export default {
     }
   },
   methods: {
+    handleBenchmarkChange() {
+      if (this.isFulltextView) {
+        this.modifyUrl();
+      } else {
+        this.updateVectorUrl();
+      }
+    },
+    onVectorDatasetChanged() {
+      this.updateVectorUrl();
+    },
+    onVectorEnginesChanged() {
+      this.updateVectorEngineGroups();
+      this.updateVectorUrl();
+    },
+    handleVectorMeta(meta) {
+      if (!meta) {
+        return;
+      }
+      if (meta.datasets) {
+        this.vectorDatasets = this.buildSelectionItems(meta.datasets, this.vectorDatasets);
+      }
+      if (meta.engines) {
+        this.vectorEngines = this.buildSelectionItems(meta.engines, this.vectorEngines);
+        this.updateVectorEngineGroups();
+      }
+      this.applyVectorStateFromUrl();
+    },
+    handleVectorStateChange(state) {
+      if (!state) {
+        return;
+      }
+      if (state.precision !== undefined && state.precision !== null) {
+        this.vectorPrecision = state.precision;
+      }
+      if (state.plotMetric) {
+        this.vectorPlotMetric = state.plotMetric;
+      }
+      this.updateVectorUrl();
+    },
+    buildSelectionItems(items, previousItems) {
+      if (!Array.isArray(items)) {
+        return [];
+      }
+      const previousSelected = new Set(this.getSelectedRow(previousItems));
+      const rows = items.map((name) => {
+        const row = {};
+        row[name] = previousSelected.has(name) ? 1 : 0;
+        return row;
+      });
+      if (rows.length > 0 && this.getSelectedRow(rows).length === 0) {
+        rows[0][Object.keys(rows[0])[0]] = 1;
+      }
+      return rows;
+    },
+    updateVectorEngineGroups() {
+      this.vectorEngineGroups = {};
+      const engineNames = [];
+      for (let row of this.vectorEngines) {
+        engineNames.push(Object.keys(row)[0]);
+      }
+      for (let engineFullName of engineNames) {
+        let engineName = engineFullName.split('_')[0];
+        if (this.vectorEngineGroups[engineName] === undefined) {
+          this.vectorEngineGroups[engineName] = {};
+        }
+        let selected = false;
+        for (let row of this.vectorEngines) {
+          if (row[engineFullName] !== undefined) {
+            selected = (row[engineFullName] !== 0 && row[engineFullName] !== false);
+          }
+        }
+        this.vectorEngineGroups[engineName][engineFullName] = selected;
+      }
+    },
+    getVectorStateFromUrl() {
+      const params = this.getUrlParams();
+      const state = {};
+      const benchmark = params.get('benchmark');
+      if (benchmark) {
+        state.benchmark = benchmark;
+      }
+      const dataset = params.get('v_dataset');
+      if (dataset) {
+        state.dataset = dataset;
+      }
+      const engines = params.get('v_engines');
+      if (engines) {
+        state.engines = engines.split(',').filter((item) => item.length > 0);
+      }
+      const precision = params.get('v_precision');
+      if (precision) {
+        const parsed = parseFloat(precision);
+        if (!Number.isNaN(parsed)) {
+          state.precision = parsed;
+        }
+      }
+      const plot = params.get('v_plot');
+      if (plot) {
+        state.plotMetric = plot;
+      }
+      return state;
+    },
+    applyBenchmarkFromUrl() {
+      if (!this.vectorUrlState || !this.vectorUrlState.benchmark) {
+        return;
+      }
+      if (this.vectorUrlState.benchmark === 'vector') {
+        this.setSelection('vector', this.benchmarks);
+      } else if (this.vectorUrlState.benchmark === 'fulltext') {
+        this.setSelection('fulltext', this.benchmarks);
+      }
+    },
+    applyVectorStateFromUrl() {
+      if (!this.vectorUrlState) {
+        return;
+      }
+      if (this.vectorUrlState.dataset) {
+        this.setSelection(this.vectorUrlState.dataset, this.vectorDatasets);
+      }
+      if (this.vectorUrlState.engines && this.vectorUrlState.engines.length) {
+        this.setSelection(this.vectorUrlState.engines.join(','), this.vectorEngines);
+        this.updateVectorEngineGroups();
+      }
+      if (this.vectorUrlState.precision !== undefined) {
+        this.vectorPrecision = this.vectorUrlState.precision;
+      }
+      if (this.vectorUrlState.plotMetric) {
+        this.vectorPlotMetric = this.vectorUrlState.plotMetric;
+      }
+    },
+    updateVectorUrl() {
+      if (!this.isFulltextView) {
+        const params = new URLSearchParams();
+        params.set('benchmark', 'vector');
+        if (this.selectedVectorDataset) {
+          params.set('v_dataset', this.selectedVectorDataset);
+        }
+        const engines = this.selectedVectorEngines;
+        if (engines.length) {
+          params.set('v_engines', engines.join(','));
+        }
+        params.set('v_precision', this.vectorPrecision.toFixed(2));
+        if (this.vectorPlotMetric) {
+          params.set('v_plot', this.vectorPlotMetric);
+        }
+        window.history.pushState("", "", "/?" + params.toString());
+      }
+    },
     init(data) {
       this.initData = data;
 
@@ -729,6 +907,17 @@ export default {
     },
   },
   computed: {
+    isFulltextView() {
+      const selected = this.getSelectedRow(this.benchmarks);
+      return selected.length === 0 || selected[0] === 'fulltext';
+    },
+    selectedVectorDataset() {
+      const selected = this.getSelectedRow(this.vectorDatasets);
+      return selected.length > 0 ? selected[0] : null;
+    },
+    selectedVectorEngines() {
+      return this.getSelectedRow(this.vectorEngines);
+    },
     getYear() {
       let today = new Date();
       return today.getFullYear();

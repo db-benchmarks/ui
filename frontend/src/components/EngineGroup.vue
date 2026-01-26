@@ -12,7 +12,8 @@
         <div class="col-2 d-flex justify-content-center" :key="name" role="button">
           <div @click="checkChildIsSingle(name, value, '#collapse-'+name)"
                :class="'d-flex engine-block '+ (currentSelection === name ? 'selected' : '')+' justify-content-center'+ (isAnyActive(name) ? ' active-engine' : '')">
-            <img :src="require(`@/assets/logos/${name}.svg`)">
+            <img v-if="hasLogo(name)" :src="getLogoSrc(name)">
+            <span v-else class="engine-text">{{ name }}</span>
             <span class="engine-badge"
                   v-bind:style="{ 'background-color': computeBackground(value)}">
               {{ getSelectedItemsCount(value) }}
@@ -58,10 +59,27 @@ export default {
   },
   data() {
     return {
-      currentSelection: null
+      currentSelection: null,
+      logoCache: {}
     }
   },
   methods: {
+    hasLogo(name) {
+      return this.getLogoSrc(name) !== null;
+    },
+    getLogoSrc(name) {
+      if (this.logoCache[name] !== undefined) {
+        return this.logoCache[name];
+      }
+      try {
+        const src = require(`@/assets/logos/${name}.svg`);
+        this.logoCache[name] = src;
+        return src;
+      } catch (error) {
+        this.logoCache[name] = null;
+        return null;
+      }
+    },
     changed() {
       this.$emit('changed')
     },
@@ -129,6 +147,12 @@ export default {
 
 img {
   width: 65%;
+  padding: 10px;
+}
+
+.engine-text {
+  font-weight: bold;
+  text-transform: capitalize;
   padding: 10px;
 }
 
