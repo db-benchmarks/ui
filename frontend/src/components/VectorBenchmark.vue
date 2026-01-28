@@ -37,7 +37,7 @@
           </div>
           <div ref="scatterChart" class="vector-chart"></div>
           <div class="precision-control precision-control--below">
-            <label class="font-weight-bold">Precision threshold: {{ precisionThreshold.toFixed(4) }}</label>
+            <label class="font-weight-bold">Precision threshold: {{ formatPrecision(precisionThreshold) }}</label>
             <input type="range"
                    :min="precisionBounds.min"
                    :max="precisionBounds.max"
@@ -435,7 +435,7 @@ export default {
               value: [this.precisionThreshold, yMax],
               label: {
                 show: true,
-                formatter: this.precisionThreshold.toFixed(4),
+                formatter: this.formatPrecision(this.precisionThreshold),
                 position: 'end',
                 color: '#d9534f'
               }
@@ -500,7 +500,7 @@ export default {
           interval: this.precisionStep,
           scale: true,
           axisLabel: {
-            formatter: (value) => value.toFixed(4)
+            formatter: (value) => this.formatPrecision(value)
           }
         },
         yAxis: {
@@ -591,7 +591,7 @@ export default {
       if (value == null) {
         return '-';
       }
-      return Number(value).toFixed(3);
+      return String(value);
     },
     formatOptional(value, stringify = false) {
       if (value == null) {
