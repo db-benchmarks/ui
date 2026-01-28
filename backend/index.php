@@ -56,7 +56,6 @@ class DataGetter {
 
 		$result   = curl_exec( $curl );
 		$httpCode = curl_getinfo( $curl, CURLINFO_HTTP_CODE );
-		curl_close( $curl );
 
 		if ( empty( $result ) ) {
 			$this->printResponse( "Server respond with empty data", self::STATUS_ERROR );
