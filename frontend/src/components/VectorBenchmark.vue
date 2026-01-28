@@ -49,21 +49,26 @@
 
       <div class="row mt-4">
         <div class="col-12">
-          <h5>Search results</h5>
-          <div v-if="filteredTableRecords.length === 0" class="alert alert-warning">
-            No engines meet precision threshold — lower the slider.
+          <h5>{{ isIndexTime ? 'Upload results' : 'Search results' }}</h5>
+          <div v-if="isIndexTime ? sortedUploadTableRecords.length === 0 : filteredTableRecords.length === 0"
+               class="alert alert-warning">
+            {{ isIndexTime ? 'No upload results available for the selected engines.' : 'No engines meet precision threshold — lower the slider.' }}
           </div>
-          <table v-else class="table table-sm">
+          <table v-else-if="!isIndexTime" class="table table-sm">
             <thead>
             <tr>
               <th>Engine</th>
               <th>Experiment</th>
               <th>Parallel</th>
+              <th>Search idx</th>
               <th>Num candidates</th>
+              <th>Options</th>
+              <th>Index options</th>
               <th>Runs</th>
-              <th role="button" @click="setSort('avg_rps')">Avg RPS</th>
-              <th role="button" @click="setSort('avg_p95_ms')">Avg p95 (ms)</th>
-              <th>Avg p99 (ms)</th>
+              <th role="button" @click="setSort('rps')">RPS</th>
+              <th role="button" @click="setSort('p95_ms')">p95 (ms)</th>
+              <th>p99 (ms)</th>
+              <th>Index time (ms)</th>
               <th role="button" @click="setSort('mean_precision')">Precision</th>
             </tr>
             </thead>
@@ -73,12 +78,45 @@
               <td>{{ record.engine }}</td>
               <td>{{ record.experiment }}</td>
               <td>{{ record.parallel }}</td>
+              <td>{{ formatOptional(record.searchIndex) }}</td>
               <td>{{ formatOptional(record.num_candidates) }}</td>
+              <td v-html="formatObjectList(record.options)"></td>
+              <td v-html="formatObjectList(record.collection_params)"></td>
               <td>{{ record.runs }}</td>
-              <td>{{ formatRps(record.avg_rps) }}</td>
-              <td>{{ formatMs(record.avg_p95_ms) }}</td>
-              <td>{{ formatMs(record.avg_p99_ms) }}</td>
+              <td>{{ formatRps(record.rps) }}</td>
+              <td>{{ formatMs(record.p95_ms) }}</td>
+              <td>{{ formatMs(record.p99_ms) }}</td>
+              <td>{{ formatMs(getUploadTime(record)) }}</td>
               <td>{{ formatPrecision(record.mean_precision) }}</td>
+            </tr>
+            </tbody>
+          </table>
+          <table v-else class="table table-sm">
+            <thead>
+            <tr>
+              <th>Engine</th>
+              <th>Experiment</th>
+              <th>Parallel</th>
+              <th>Options</th>
+              <th>Index options</th>
+              <th>Runs</th>
+              <th role="button" @click="setUploadSort('upload_ms')">Upload time (ms)</th>
+              <th>Total upload (ms)</th>
+              <th>Timestamp</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="record in sortedUploadTableRecords"
+                :key="record.engine + '-' + record.experiment + '-' + record.parallel + '-' + record.last_timestamp">
+              <td>{{ record.engine }}</td>
+              <td>{{ record.experiment }}</td>
+              <td>{{ record.parallel }}</td>
+              <td v-html="formatObjectList(record.options)"></td>
+              <td v-html="formatObjectList(record.collection_params)"></td>
+              <td>{{ record.runs }}</td>
+              <td>{{ formatMs(record.upload_ms) }}</td>
+              <td>{{ formatMs(record.total_upload_ms) }}</td>
+              <td>{{ record.last_timestamp || '-' }}</td>
             </tr>
             </tbody>
           </table>
@@ -122,11 +160,16 @@ export default {
       precisionBounds: { min: 0, max: 1 },
       precisionStep: 0.001,
       scatterChart: null,
-      sortKey: 'avg_rps',
-      sortDirection: 'desc'
+      sortKey: 'rps',
+      sortDirection: 'desc',
+      uploadSortKey: 'upload_ms',
+      uploadSortDirection: 'asc'
     };
   },
   computed: {
+    isIndexTime() {
+      return this.plotMetric === 'index_time';
+    },
     plotOptions() {
       return [
         { value: 'rps', label: 'RPS' },
@@ -146,10 +189,51 @@ export default {
       return null;
     },
     searchRecords() {
-      if (!this.vectorData || !this.vectorData.records) {
+      if (!this.vectorData || !this.vectorData.search_records) {
         return [];
       }
-      return this.vectorData.records.filter(record => record.stage === 'search');
+      return this.vectorData.search_records;
+    },
+    uploadRecords() {
+      if (!this.vectorData || !this.vectorData.upload_records) {
+        return [];
+      }
+      return this.vectorData.upload_records;
+    },
+    uploadTableRecords() {
+      if (!this.dataset) {
+        return [];
+      }
+      const selectedEngines = new Set(this.selectedEngines || []);
+      const precisionLookup = this.maxPrecisionLookup;
+      return this.uploadRecords.filter(record => {
+        if (record.dataset !== this.dataset) {
+          return false;
+        }
+        if (selectedEngines.size === 0) {
+          return false;
+        }
+        if (!selectedEngines.has(record.engine)) {
+          return false;
+        }
+        const key = `${record.dataset}|${record.engine}|${record.experiment}`;
+        const precision = precisionLookup.get(key);
+        if (precision == null) {
+          return false;
+        }
+        return precision >= this.precisionThreshold;
+      });
+    },
+    maxPrecisionLookup() {
+      const lookup = new Map();
+      for (const record of this.searchRecords) {
+        const key = `${record.dataset}|${record.engine}|${record.experiment}`;
+        const existing = lookup.get(key);
+        if (existing === undefined || record.mean_precision > existing) {
+          lookup.set(key, record.mean_precision);
+        }
+      }
+      return lookup;
     },
     activeRecords() {
       if (!this.dataset) {
@@ -167,15 +251,17 @@ export default {
       });
     },
     uploadLookup() {
-      if (!this.vectorData || !this.vectorData.records) {
+      if (!this.vectorData || !this.vectorData.upload_records) {
         return new Map();
       }
       const lookup = new Map();
-      this.vectorData.records
-          .filter(record => record.stage === 'upload')
+      this.vectorData.upload_records
           .forEach(record => {
-            const key = `${record.dataset}|${record.engine}|${record.experiment}|${record.parallel}`;
-            lookup.set(key, record);
+            const key = `${record.dataset}|${record.engine}|${record.experiment}`;
+            const existing = lookup.get(key);
+            if (!existing || (record.last_timestamp && record.last_timestamp > existing.last_timestamp)) {
+              lookup.set(key, record);
+            }
           });
       return lookup;
     },
@@ -186,6 +272,18 @@ export default {
       const records = [...this.filteredTableRecords];
       const key = this.sortKey;
       const direction = this.sortDirection === 'desc' ? -1 : 1;
+      records.sort((a, b) => {
+        if (a[key] === b[key]) {
+          return 0;
+        }
+        return a[key] > b[key] ? -direction : direction;
+      });
+      return records;
+    },
+    sortedUploadTableRecords() {
+      const records = [...this.uploadTableRecords];
+      const key = this.uploadSortKey;
+      const direction = this.uploadSortDirection === 'desc' ? -1 : 1;
       records.sort((a, b) => {
         if (a[key] === b[key]) {
           return 0;
@@ -206,6 +304,10 @@ export default {
     plotMetric() {
       this.renderCharts();
       this.emitStateChange();
+      if (this.plotMetric === 'index_time') {
+        this.uploadSortKey = 'upload_ms';
+        this.uploadSortDirection = 'asc';
+      }
     },
     selectedEngines() {
       this.renderCharts();
@@ -267,10 +369,23 @@ export default {
       const records = this.activeRecords;
       const metricLabel = this.getMetricLabel();
       const seriesMap = new Map();
+      const maxPrecisionBySeries = new Map();
       const precisionValues = [];
       const metricValues = [];
+      if (this.plotMetric === 'index_time') {
+        for (const record of records) {
+          const seriesKey = `${record.engine} (${record.experiment})`;
+          const currentMax = maxPrecisionBySeries.get(seriesKey);
+          if (currentMax === undefined || record.mean_precision > currentMax) {
+            maxPrecisionBySeries.set(seriesKey, record.mean_precision);
+          }
+        }
+      }
       for (const record of records) {
         const seriesKey = `${record.engine} (${record.experiment})`;
+        if (this.plotMetric === 'index_time' && maxPrecisionBySeries.get(seriesKey) !== record.mean_precision) {
+          continue;
+        }
         if (!seriesMap.has(seriesKey)) {
           seriesMap.set(seriesKey, []);
         }
@@ -357,16 +472,19 @@ export default {
           formatter: params => {
             const record = params.data.record;
             return [
-              `<strong>${record.engine}</strong> (${record.experiment})`,
-              `Parallel: ${record.parallel}`,
-              `Num candidates: ${this.formatOptional(record.num_candidates)}`,
-              `Avg RPS: ${this.formatRps(record.avg_rps)}`,
-              `Avg latency: ${this.formatMs(record.avg_mean_ms)} ms`,
-              `Avg p95: ${this.formatMs(record.avg_p95_ms)} ms`,
-              `Avg p99: ${this.formatMs(record.avg_p99_ms)} ms`,
-              `Mean precision: ${this.formatPrecision(record.mean_precision)}`,
-              `Runs: ${record.runs}`
-            ].join('<br/>');
+              `<div><strong>${record.engine}</strong> (${record.experiment})</div>`,
+              `<div>Parallel: ${record.parallel}</div>`,
+              `<div>Search index: ${this.formatOptional(record.searchIndex)}</div>`,
+              `<div>Num candidates: ${this.formatOptional(record.num_candidates)}</div>`,
+              `<div>Options:</div>${this.formatObjectList(record.options, true)}`,
+              `<div>Index options:</div>${this.formatObjectList(record.collection_params, true)}`,
+              `<div>RPS: ${this.formatRps(record.rps)}</div>`,
+              `<div>Latency: ${this.formatMs(record.mean_ms)} ms</div>`,
+              `<div>p95: ${this.formatMs(record.p95_ms)} ms</div>`,
+              `<div>p99: ${this.formatMs(record.p99_ms)} ms</div>`,
+              `<div>Mean precision: ${this.formatPrecision(record.mean_precision)}</div>`,
+              `<div>Runs: ${record.runs}</div>`
+            ].join('');
           }
         },
         legend: {
@@ -395,7 +513,7 @@ export default {
 
     },
     setSort(key) {
-      if (key === 'avg_p95_ms') {
+      if (key === 'p95_ms') {
         this.sortKey = key;
         this.sortDirection = 'asc';
         return;
@@ -405,13 +523,21 @@ export default {
         this.sortDirection = 'desc';
         return;
       }
-      if (key === 'avg_rps') {
+      if (key === 'rps') {
         if (this.sortKey === key) {
           this.sortDirection = this.sortDirection === 'desc' ? 'asc' : 'desc';
         } else {
           this.sortKey = key;
           this.sortDirection = 'desc';
         }
+      }
+    },
+    setUploadSort(key) {
+      if (this.uploadSortKey === key) {
+        this.uploadSortDirection = this.uploadSortDirection === 'desc' ? 'asc' : 'desc';
+      } else {
+        this.uploadSortKey = key;
+        this.uploadSortDirection = 'asc';
       }
     },
     getMetricLabel() {
@@ -433,20 +559,20 @@ export default {
     getMetricValue(record) {
       switch (this.plotMetric) {
         case 'rps':
-          return record.avg_rps;
+          return record.rps;
         case 'latency':
-          return record.avg_mean_ms;
+          return record.mean_ms;
         case 'p95':
-          return record.avg_p95_ms;
+          return record.p95_ms;
         case 'p99':
-          return record.avg_p99_ms;
+          return record.p99_ms;
         case 'index_time': {
-          const key = `${record.dataset}|${record.engine}|${record.experiment}|${record.parallel}`;
+          const key = `${record.dataset}|${record.engine}|${record.experiment}`;
           const upload = this.uploadLookup.get(key);
-          return upload ? upload.avg_upload_ms : null;
+          return upload ? upload.upload_ms : null;
         }
         default:
-          return record.avg_rps;
+          return record.rps;
       }
     },
     formatMs(value) {
@@ -467,11 +593,57 @@ export default {
       }
       return Number(value).toFixed(3);
     },
-    formatOptional(value) {
+    formatOptional(value, stringify = false) {
       if (value == null) {
         return '-';
       }
+      if (stringify && typeof value === 'object') {
+        return JSON.stringify(value);
+      }
       return value;
+    },
+    getUploadTime(record) {
+      const key = `${record.dataset}|${record.engine}|${record.experiment}`;
+      const upload = this.uploadLookup.get(key);
+      return upload ? upload.upload_ms : null;
+    },
+    escapeHtml(value) {
+      return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+    },
+    formatObjectList(value, inline = false) {
+      if (value == null) {
+        return inline ? '-' : '-';
+      }
+      const renderList = (input) => {
+        const items = [];
+        if (Array.isArray(input)) {
+          input.forEach((item, index) => {
+            if (item && typeof item === 'object') {
+              items.push(`<li>${index}: ${renderList(item)}</li>`);
+            } else {
+              items.push(`<li>${index}: ${this.escapeHtml(item)}</li>`);
+            }
+          });
+        } else if (input && typeof input === 'object') {
+          Object.keys(input).sort().forEach((key) => {
+            const entryValue = input[key];
+            if (entryValue && typeof entryValue === 'object') {
+              items.push(`<li>${this.escapeHtml(key)}: ${renderList(entryValue)}</li>`);
+            } else {
+              items.push(`<li>${this.escapeHtml(key)}: ${this.escapeHtml(entryValue)}</li>`);
+            }
+          });
+        } else {
+          items.push(`<li>${this.escapeHtml(input)}</li>`);
+        }
+        return `<ul style="margin: 0 0 0 16px; padding: 0;">${items.join('')}</ul>`;
+      };
+      return renderList(value);
     },
     emitStateChange() {
       this.$emit('state-change', {

@@ -62,13 +62,93 @@ function getNumCandidates(params) {
   return null;
 }
 
+function stableStringify(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+  if (typeof value === 'object') {
+    const keys = Object.keys(value).sort();
+    return `{${keys.map((key) => `${key}:${stableStringify(value[key])}`).join(',')}}`;
+  }
+  return String(value);
+}
+
+function getOptions(params) {
+  if (!params) {
+    return null;
+  }
+  if (params.options !== undefined) {
+    return params.options;
+  }
+  if (params.search_params && params.search_params.options !== undefined) {
+    return params.search_params.options;
+  }
+  return null;
+}
+
+function getCollectionParams(params) {
+  if (!params) {
+    return null;
+  }
+  if (params.collection_params !== undefined) {
+    return params.collection_params;
+  }
+  return null;
+}
+
+function collectJsonFiles(dirPath) {
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectJsonFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith('.json')) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+function compareTimestamps(a, b) {
+  if (a && b) {
+    return a > b ? 1 : (a < b ? -1 : 0);
+  }
+  if (a && !b) {
+    return 1;
+  }
+  if (!a && b) {
+    return -1;
+  }
+  return 0;
+}
+
+function inferStage(results, fallbackStage) {
+  if (!results) {
+    return fallbackStage || 'search';
+  }
+  if (fallbackStage === 'upload') {
+    return 'upload';
+  }
+  if (results.upload_time !== undefined) {
+    return 'upload';
+  }
+  if (results.post_upload !== undefined && (results.total_time !== undefined || results.upload_time !== undefined)) {
+    return 'upload';
+  }
+  return fallbackStage || 'search';
+}
+
 function main() {
   if (!fs.existsSync(inputDir)) {
     console.error(`Missing input directory: ${inputDir}`);
     process.exit(1);
   }
 
-  const files = fs.readdirSync(inputDir).filter((file) => file.endsWith('.json'));
+  const files = collectJsonFiles(inputDir);
   if (files.length === 0) {
     console.error('No vector result files found in frontend/vector_results.');
     process.exit(1);
@@ -79,10 +159,9 @@ function main() {
   const engines = new Set();
 
   for (const file of files) {
-    const filePath = path.join(inputDir, file);
     let parsed;
     try {
-      parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
     } catch (error) {
       console.warn(`Skipping invalid JSON file: ${file}`);
       continue;
@@ -100,9 +179,12 @@ function main() {
       continue;
     }
 
-    const { stage, searchIndex, lastTimestamp } = parseFilenameMeta(file);
+    const { stage: stageFromName, searchIndex, lastTimestamp } = parseFilenameMeta(file);
+    const stage = inferStage(results, stageFromName);
     const parallel = params.parallel !== undefined ? params.parallel : null;
     const numCandidates = getNumCandidates(params);
+    const options = getOptions(params);
+    const collectionParams = getCollectionParams(params);
 
     if (stage === 'upload') {
       if (results.upload_time === undefined && results.total_time === undefined) {
@@ -126,79 +208,45 @@ function main() {
       stage || '',
       searchIndex !== null && searchIndex !== undefined ? String(searchIndex) : '',
       parallel !== null && parallel !== undefined ? String(parallel) : '',
-      numCandidates !== null && numCandidates !== undefined ? String(numCandidates) : ''
+      numCandidates !== null && numCandidates !== undefined ? String(numCandidates) : '',
+      stableStringify(options),
+      stableStringify(collectionParams)
     ];
     const key = keyParts.join('|');
 
+    const record = {
+      dataset,
+      engine,
+      experiment,
+      stage: stage || 'search',
+      searchIndex: searchIndex !== null ? searchIndex : null,
+      parallel: parallel !== null ? parallel : null,
+      num_candidates: numCandidates !== null ? numCandidates : null,
+      options: options !== null ? options : null,
+      collection_params: collectionParams !== null ? collectionParams : null,
+      runs: 1,
+      rps: stage === 'upload' ? null : results.rps,
+      mean_precision: stage === 'upload' ? null : results.mean_precisions,
+      p95_ms: stage === 'upload' ? null : results.p95_time * 1000,
+      p99_ms: stage === 'upload' ? null : results.p99_time * 1000,
+      mean_ms: stage === 'upload' ? null : (results.mean_time !== undefined ? results.mean_time * 1000 : null),
+      upload_ms: stage === 'upload' ? (results.upload_time !== undefined ? results.upload_time * 1000 : null) : null,
+      total_upload_ms: stage === 'upload' ? (results.total_time !== undefined ? results.total_time * 1000 : null) : null,
+      last_timestamp: lastTimestamp
+    };
+
     if (!aggregates.has(key)) {
-      aggregates.set(key, {
-        dataset,
-        engine,
-        experiment,
-        stage: stage || 'search',
-        searchIndex: searchIndex !== null ? searchIndex : null,
-        parallel: parallel !== null ? parallel : null,
-        num_candidates: numCandidates !== null ? numCandidates : null,
-        runs: 0,
-        sum_rps: 0,
-        sum_precision: 0,
-        sum_p95_ms: 0,
-        sum_p99_ms: 0,
-        sum_mean_ms: 0,
-        count_mean_ms: 0,
-        sum_upload_ms: 0,
-        sum_total_upload_ms: 0,
-        last_timestamp: lastTimestamp
-      });
-    }
-
-    const entry = aggregates.get(key);
-    entry.runs += 1;
-    if (stage === 'upload') {
-      if (results.upload_time !== undefined) {
-        entry.sum_upload_ms += results.upload_time * 1000;
-      }
-      if (results.total_time !== undefined) {
-        entry.sum_total_upload_ms += results.total_time * 1000;
-      }
+      aggregates.set(key, record);
     } else {
-      entry.sum_rps += results.rps;
-      entry.sum_precision += results.mean_precisions;
-      entry.sum_p95_ms += results.p95_time * 1000;
-      entry.sum_p99_ms += results.p99_time * 1000;
-      if (results.mean_time !== undefined) {
-        entry.sum_mean_ms += results.mean_time * 1000;
-        entry.count_mean_ms += 1;
+      const existing = aggregates.get(key);
+      const cmp = compareTimestamps(record.last_timestamp, existing.last_timestamp);
+      if (cmp > 0) {
+        aggregates.set(key, record);
       }
-    }
-
-    if (lastTimestamp && (!entry.last_timestamp || lastTimestamp > entry.last_timestamp)) {
-      entry.last_timestamp = lastTimestamp;
     }
   }
 
-  const records = Array.from(aggregates.values()).map((entry) => {
-    const runs = entry.runs || 1;
-    const meanCount = entry.count_mean_ms || 0;
-    return {
-      dataset: entry.dataset,
-      engine: entry.engine,
-      experiment: entry.experiment,
-      stage: entry.stage,
-      searchIndex: entry.searchIndex,
-      parallel: entry.parallel,
-      num_candidates: entry.num_candidates,
-      runs: entry.runs,
-      avg_rps: entry.stage === 'upload' ? null : entry.sum_rps / runs,
-      mean_precision: entry.stage === 'upload' ? null : entry.sum_precision / runs,
-      avg_p95_ms: entry.stage === 'upload' ? null : entry.sum_p95_ms / runs,
-      avg_p99_ms: entry.stage === 'upload' ? null : entry.sum_p99_ms / runs,
-      avg_mean_ms: entry.stage === 'upload' ? null : (meanCount > 0 ? entry.sum_mean_ms / meanCount : null),
-      avg_upload_ms: entry.stage === 'upload' ? entry.sum_upload_ms / runs : null,
-      avg_total_upload_ms: entry.stage === 'upload' ? entry.sum_total_upload_ms / runs : null,
-      last_timestamp: entry.last_timestamp
-    };
-  });
+  const records = Array.from(aggregates.values());
 
   records.sort((a, b) => {
     const keys = ['dataset', 'engine', 'experiment', 'stage'];
@@ -218,11 +266,15 @@ function main() {
     return 0;
   });
 
+  const searchRecords = records.filter((record) => record.stage === 'search');
+  const uploadRecords = records.filter((record) => record.stage === 'upload');
+
   const output = {
     generated_at: new Date().toISOString(),
     datasets: Array.from(datasets).sort(),
     engines: Array.from(engines).sort(),
-    records
+    search_records: searchRecords,
+    upload_records: uploadRecords
   };
 
   fs.mkdirSync(outputDir, { recursive: true });
