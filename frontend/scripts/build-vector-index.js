@@ -51,6 +51,23 @@ function getNumCandidates(params) {
   if (params.num_candidates !== undefined) {
     return params.num_candidates;
   }
+  if (params.config) {
+    if (params.config.num_candidates !== undefined) {
+      return params.config.num_candidates;
+    }
+    if (params.config.ef !== undefined) {
+      return params.config.ef;
+    }
+    if (params.config.hnsw_ef !== undefined) {
+      return params.config.hnsw_ef;
+    }
+    if (params.config.EF !== undefined) {
+      return params.config.EF;
+    }
+    if (params.config['knn.algo_param.ef_search'] !== undefined) {
+      return params.config['knn.algo_param.ef_search'];
+    }
+  }
   if (params.search_params) {
     if (params.search_params.num_candidates !== undefined) {
       return params.search_params.num_candidates;
@@ -60,6 +77,20 @@ function getNumCandidates(params) {
     }
   }
   return null;
+}
+
+function getConfig(params) {
+  if (!params) {
+    return null;
+  }
+  return params.config !== undefined ? params.config : null;
+}
+
+function getSearchParams(params) {
+  if (!params) {
+    return null;
+  }
+  return params.search_params !== undefined ? params.search_params : null;
 }
 
 function stableStringify(value) {
@@ -97,6 +128,61 @@ function getCollectionParams(params) {
     return params.collection_params;
   }
   return null;
+}
+
+function getNormalizedVectorParams(params) {
+  const collectionParams = getCollectionParams(params) || {};
+  const config = getConfig(params) || {};
+  const searchParams = getSearchParams(params) || {};
+
+  const toNumberIfNumeric = (value) => {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string' && value.trim() !== '') {
+      const parsed = Number(value);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    return value;
+  };
+
+  const m = (
+    (collectionParams.index_options && collectionParams.index_options.m) ??
+    (collectionParams.method && collectionParams.method.parameters && collectionParams.method.parameters.m) ??
+    (collectionParams.hnsw_config && collectionParams.hnsw_config.m) ??
+    (collectionParams.vectorIndexConfig && collectionParams.vectorIndexConfig.maxConnections) ??
+    null
+  );
+
+  const efBuild = (
+    (collectionParams.index_options && collectionParams.index_options.ef_construction) ??
+    (collectionParams.method && collectionParams.method.parameters && collectionParams.method.parameters.ef_construction) ??
+    (collectionParams.hnsw_config && collectionParams.hnsw_config.ef_construct) ??
+    (collectionParams.vectorIndexConfig && collectionParams.vectorIndexConfig.efConstruction) ??
+    null
+  );
+
+  const efSearch = (
+    config['knn.algo_param.ef_search'] ??
+    config.num_candidates ??
+    config.ef ??
+    config.hnsw_ef ??
+    config.EF ??
+    searchParams.hnsw_ef ??
+    searchParams.num_candidates ??
+    null
+  );
+
+  return {
+    m: toNumberIfNumeric(m),
+    ef_build: toNumberIfNumeric(efBuild),
+    ef_search: toNumberIfNumeric(efSearch)
+  };
 }
 
 function collectJsonFiles(dirPath) {
@@ -185,6 +271,9 @@ function main() {
     const numCandidates = getNumCandidates(params);
     const options = getOptions(params);
     const collectionParams = getCollectionParams(params);
+    const config = getConfig(params);
+    const searchParams = getSearchParams(params);
+    const normalizedParams = getNormalizedVectorParams(params);
 
     if (stage === 'upload') {
       if (results.upload_time === undefined && results.total_time === undefined) {
@@ -210,7 +299,10 @@ function main() {
       parallel !== null && parallel !== undefined ? String(parallel) : '',
       numCandidates !== null && numCandidates !== undefined ? String(numCandidates) : '',
       stableStringify(options),
-      stableStringify(collectionParams)
+      stableStringify(collectionParams),
+      stableStringify(config),
+      stableStringify(searchParams),
+      stableStringify(normalizedParams)
     ];
     const key = keyParts.join('|');
 
@@ -224,6 +316,9 @@ function main() {
       num_candidates: numCandidates !== null ? numCandidates : null,
       options: options !== null ? options : null,
       collection_params: collectionParams !== null ? collectionParams : null,
+      config: config !== null ? config : null,
+      search_params: searchParams !== null ? searchParams : null,
+      normalized_params: normalizedParams,
       runs: 1,
       rps: stage === 'upload' ? null : results.rps,
       mean_precision: stage === 'upload' ? null : results.mean_precisions,
@@ -269,10 +364,26 @@ function main() {
   const searchRecords = records.filter((record) => record.stage === 'search');
   const uploadRecords = records.filter((record) => record.stage === 'upload');
 
+  const datasetEngines = new Map();
+  for (const record of records) {
+    if (!record.dataset || !record.engine) {
+      continue;
+    }
+    if (!datasetEngines.has(record.dataset)) {
+      datasetEngines.set(record.dataset, new Set());
+    }
+    datasetEngines.get(record.dataset).add(record.engine);
+  }
+
   const output = {
     generated_at: new Date().toISOString(),
     datasets: Array.from(datasets).sort(),
     engines: Array.from(engines).sort(),
+    dataset_engines: Object.fromEntries(
+      Array.from(datasetEngines.entries())
+        .sort(([a], [b]) => String(a).localeCompare(String(b)))
+        .map(([dataset, engineSet]) => [dataset, Array.from(engineSet).sort()])
+    ),
     search_records: searchRecords,
     upload_records: uploadRecords
   };

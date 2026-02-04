@@ -27,12 +27,76 @@
           <div class="d-flex flex-wrap align-items-center justify-content-between">
             <h4 class="mb-2">Vector search performance</h4>
           </div>
-          <div class="plot-controls">
-            <label class="font-weight-bold">Plot values:</label>
-            <div class="form-check form-check-inline" v-for="option in plotOptions" :key="option.value">
-              <input class="form-check-input" type="radio" :id="`plot-${option.value}`"
-                     :value="option.value" v-model="plotMetric">
-              <label class="form-check-label" :for="`plot-${option.value}`">{{ option.label }}</label>
+          <div class="plot-controls d-flex flex-wrap align-items-center">
+            <div class="d-flex flex-wrap align-items-center mr-4">
+              <label class="font-weight-bold mr-2 mb-0">Plot values:</label>
+              <div class="form-check form-check-inline" v-for="option in plotOptions" :key="option.value">
+                <input class="form-check-input" type="radio" :id="`plot-${option.value}`"
+                       :value="option.value" v-model="plotMetric">
+                <label class="form-check-label" :for="`plot-${option.value}`">{{ option.label }}</label>
+              </div>
+            </div>
+            <div v-if="availableParallels.length" class="d-flex flex-wrap align-items-center">
+              <label class="font-weight-bold mr-2 mb-0">{{ threadsLabel }}:</label>
+              <select class="form-control form-control-sm w-auto" v-model.number="selectedParallel">
+                <option v-for="parallel in availableParallels" :key="parallel" :value="parallel">
+                  {{ parallel }}
+                </option>
+              </select>
+            </div>
+            <div v-if="availableStorageEngines.length" class="d-flex flex-wrap align-items-center ml-3">
+              <label class="font-weight-bold mr-2 mb-0">Storage:</label>
+              <select class="form-control form-control-sm w-auto" v-model="selectedStorageEngine">
+                <option :value="null">Any</option>
+                <option v-for="engine in availableStorageEngines" :key="engine" :value="engine">
+                  {{ engine }}
+                </option>
+              </select>
+            </div>
+            <div v-if="availableOptimizeCutoffs.length" class="d-flex flex-wrap align-items-center ml-3">
+              <label class="font-weight-bold mr-2 mb-0">Optimize cutoff:</label>
+              <select class="form-control form-control-sm w-auto" v-model.number="selectedOptimizeCutoff">
+                <option :value="null">Any</option>
+                <option v-for="cutoff in availableOptimizeCutoffs" :key="cutoff" :value="cutoff">
+                  {{ cutoff }}
+                </option>
+              </select>
+            </div>
+            <div v-if="availableAutoOptimize.length" class="d-flex flex-wrap align-items-center ml-3">
+              <label class="font-weight-bold mr-2 mb-0">Auto optimize:</label>
+              <select class="form-control form-control-sm w-auto" v-model.number="selectedAutoOptimize">
+                <option :value="null">Any</option>
+                <option v-for="value in availableAutoOptimize" :key="value" :value="value">
+                  {{ value }}
+                </option>
+              </select>
+            </div>
+            <div v-if="availableMValues.length" class="d-flex flex-wrap align-items-center ml-3">
+              <label class="font-weight-bold mr-2 mb-0">M:</label>
+              <select class="form-control form-control-sm w-auto" v-model.number="selectedM">
+                <option :value="null">Any</option>
+                <option v-for="value in availableMValues" :key="value" :value="value">
+                  {{ value }}
+                </option>
+              </select>
+            </div>
+            <div v-if="availableEfBuildValues.length" class="d-flex flex-wrap align-items-center ml-3">
+              <label class="font-weight-bold mr-2 mb-0">EF (build):</label>
+              <select class="form-control form-control-sm w-auto" v-model.number="selectedEfBuild">
+                <option :value="null">Any</option>
+                <option v-for="value in availableEfBuildValues" :key="value" :value="value">
+                  {{ value }}
+                </option>
+              </select>
+            </div>
+            <div v-if="availableEfSearchValues.length" class="d-flex flex-wrap align-items-center ml-3">
+              <label class="font-weight-bold mr-2 mb-0">EF (search):</label>
+              <select class="form-control form-control-sm w-auto" v-model.number="selectedEfSearch">
+                <option :value="null">Any</option>
+                <option v-for="value in availableEfSearchValues" :key="value" :value="value">
+                  {{ value }}
+                </option>
+              </select>
             </div>
           </div>
           <div ref="scatterChart" class="vector-chart"></div>
@@ -74,7 +138,7 @@
             </thead>
             <tbody>
             <tr v-for="record in sortedTableRecords"
-                :key="record.engine + '-' + record.experiment + '-' + record.parallel + '-' + record.num_candidates">
+                :key="record.engine + '-' + record.experiment + '-' + record.parallel + '-' + record.searchIndex + '-' + record.num_candidates + '-' + record.last_timestamp">
               <td>{{ record.engine }}</td>
               <td>{{ record.experiment }}</td>
               <td>{{ record.parallel }}</td>
@@ -148,6 +212,34 @@ export default {
     initialPlotMetric: {
       type: String,
       required: false
+    },
+    initialParallel: {
+      type: Number,
+      required: false
+    },
+    initialStorageEngine: {
+      type: String,
+      required: false
+    },
+    initialOptimizeCutoff: {
+      type: Number,
+      required: false
+    },
+    initialAutoOptimize: {
+      type: Number,
+      required: false
+    },
+    initialM: {
+      type: Number,
+      required: false
+    },
+    initialEfBuild: {
+      type: Number,
+      required: false
+    },
+    initialEfSearch: {
+      type: Number,
+      required: false
     }
   },
   data() {
@@ -157,6 +249,13 @@ export default {
       vectorData: null,
       precisionThreshold: this.initialPrecision !== undefined ? this.initialPrecision : 0.9,
       plotMetric: this.initialPlotMetric || 'rps',
+      selectedParallel: this.initialParallel !== undefined ? this.initialParallel : null,
+      selectedStorageEngine: this.initialStorageEngine || null,
+      selectedOptimizeCutoff: this.initialOptimizeCutoff !== undefined ? this.initialOptimizeCutoff : null,
+      selectedAutoOptimize: this.initialAutoOptimize !== undefined ? this.initialAutoOptimize : null,
+      selectedM: this.initialM !== undefined ? this.initialM : null,
+      selectedEfBuild: this.initialEfBuild !== undefined ? this.initialEfBuild : null,
+      selectedEfSearch: this.initialEfSearch !== undefined ? this.initialEfSearch : null,
       precisionBounds: { min: 0, max: 1 },
       precisionStep: 0.001,
       scatterChart: null,
@@ -169,6 +268,9 @@ export default {
   computed: {
     isIndexTime() {
       return this.plotMetric === 'index_time';
+    },
+    threadsLabel() {
+      return this.isIndexTime ? 'Upload threads' : 'Search threads';
     },
     plotOptions() {
       return [
@@ -194,11 +296,178 @@ export default {
       }
       return this.vectorData.search_records;
     },
+    availableParallels() {
+      if (!this.dataset) {
+        return [];
+      }
+      const selectedEngines = new Set(this.selectedEngines || []);
+      const parallels = new Set();
+      const sourceRecords = this.isIndexTime ? this.uploadRecords : this.searchRecords;
+      for (const record of sourceRecords) {
+        if (record.dataset !== this.dataset) {
+          continue;
+        }
+        if (!selectedEngines.has(record.engine)) {
+          continue;
+        }
+        if (record.parallel == null) {
+          continue;
+        }
+        parallels.add(record.parallel);
+      }
+      return Array.from(parallels).sort((a, b) => b - a);
+    },
+    availableStorageEngines() {
+      if (!this.dataset) {
+        return [];
+      }
+      const selectedEngines = new Set(this.selectedEngines || []);
+      const values = new Set();
+      const sourceRecords = this.isIndexTime ? this.uploadRecords : this.searchRecords;
+      for (const record of sourceRecords) {
+        if (record.dataset !== this.dataset) {
+          continue;
+        }
+        if (!selectedEngines.has(record.engine)) {
+          continue;
+        }
+        const storageEngine = record.collection_params ? record.collection_params.engine : null;
+        if (storageEngine == null) {
+          continue;
+        }
+        values.add(storageEngine);
+      }
+      return Array.from(values).sort();
+    },
+    availableOptimizeCutoffs() {
+      if (!this.dataset) {
+        return [];
+      }
+      const selectedEngines = new Set(this.selectedEngines || []);
+      const values = new Set();
+      const sourceRecords = this.isIndexTime ? this.uploadRecords : this.searchRecords;
+      for (const record of sourceRecords) {
+        if (record.dataset !== this.dataset) {
+          continue;
+        }
+        if (!selectedEngines.has(record.engine)) {
+          continue;
+        }
+        const cutoff = record.collection_params ? record.collection_params.optimize_cutoff : null;
+        if (cutoff == null) {
+          continue;
+        }
+        values.add(cutoff);
+      }
+      return Array.from(values).sort((a, b) => b - a);
+    },
+    availableAutoOptimize() {
+      if (!this.dataset) {
+        return [];
+      }
+      const selectedEngines = new Set(this.selectedEngines || []);
+      const values = new Set();
+      const sourceRecords = this.isIndexTime ? this.uploadRecords : this.searchRecords;
+      for (const record of sourceRecords) {
+        if (record.dataset !== this.dataset) {
+          continue;
+        }
+        if (!selectedEngines.has(record.engine)) {
+          continue;
+        }
+        const value = record.collection_params ? record.collection_params.auto_optimize : null;
+        if (value == null) {
+          continue;
+        }
+        values.add(value);
+      }
+      return Array.from(values).sort((a, b) => b - a);
+    },
+    availableMValues() {
+      if (!this.dataset) {
+        return [];
+      }
+      const selectedEngines = new Set(this.selectedEngines || []);
+      const values = new Set();
+      const sourceRecords = this.isIndexTime ? this.uploadRecords : this.searchRecords;
+      for (const record of sourceRecords) {
+        if (record.dataset !== this.dataset) {
+          continue;
+        }
+        if (!selectedEngines.has(record.engine)) {
+          continue;
+        }
+        const value = record.normalized_params ? record.normalized_params.m : null;
+        if (value == null) {
+          continue;
+        }
+        values.add(value);
+      }
+      return Array.from(values).sort((a, b) => b - a);
+    },
+    availableEfBuildValues() {
+      if (!this.dataset) {
+        return [];
+      }
+      const selectedEngines = new Set(this.selectedEngines || []);
+      const values = new Set();
+      const sourceRecords = this.isIndexTime ? this.uploadRecords : this.searchRecords;
+      for (const record of sourceRecords) {
+        if (record.dataset !== this.dataset) {
+          continue;
+        }
+        if (!selectedEngines.has(record.engine)) {
+          continue;
+        }
+        const value = record.normalized_params ? record.normalized_params.ef_build : null;
+        if (value == null) {
+          continue;
+        }
+        values.add(value);
+      }
+      return Array.from(values).sort((a, b) => b - a);
+    },
+    availableEfSearchValues() {
+      if (!this.dataset) {
+        return [];
+      }
+      const selectedEngines = new Set(this.selectedEngines || []);
+      const values = new Set();
+      const sourceRecords = this.isIndexTime ? this.uploadRecords : this.searchRecords;
+      for (const record of sourceRecords) {
+        if (record.dataset !== this.dataset) {
+          continue;
+        }
+        if (!selectedEngines.has(record.engine)) {
+          continue;
+        }
+        const value = record.normalized_params ? record.normalized_params.ef_search : null;
+        if (value == null) {
+          continue;
+        }
+        values.add(value);
+      }
+      return Array.from(values).sort((a, b) => b - a);
+    },
     uploadRecords() {
       if (!this.vectorData || !this.vectorData.upload_records) {
         return [];
       }
       return this.vectorData.upload_records;
+    },
+    uploadLatestLookup() {
+      if (!this.vectorData || !this.vectorData.upload_records) {
+        return new Map();
+      }
+      const lookup = new Map();
+      this.vectorData.upload_records.forEach(record => {
+        const key = `${record.dataset}|${record.engine}|${record.experiment}`;
+        const existing = lookup.get(key);
+        if (!existing || (record.last_timestamp && record.last_timestamp > existing.last_timestamp)) {
+          lookup.set(key, record);
+        }
+      });
+      return lookup;
     },
     uploadTableRecords() {
       if (!this.dataset) {
@@ -215,6 +484,45 @@ export default {
         }
         if (!selectedEngines.has(record.engine)) {
           return false;
+        }
+        if (this.selectedParallel !== null && record.parallel !== this.selectedParallel) {
+          return false;
+        }
+        if (this.selectedStorageEngine !== null) {
+          const storageEngine = record.collection_params ? record.collection_params.engine : null;
+          if (storageEngine !== this.selectedStorageEngine) {
+            return false;
+          }
+        }
+        if (this.selectedOptimizeCutoff !== null) {
+          const cutoff = record.collection_params ? record.collection_params.optimize_cutoff : null;
+          if (cutoff !== this.selectedOptimizeCutoff) {
+            return false;
+          }
+        }
+        if (this.selectedAutoOptimize !== null) {
+          const autoOptimize = record.collection_params ? record.collection_params.auto_optimize : null;
+          if (autoOptimize !== this.selectedAutoOptimize) {
+            return false;
+          }
+        }
+        if (this.selectedM !== null) {
+          const value = record.normalized_params ? record.normalized_params.m : null;
+          if (value !== this.selectedM) {
+            return false;
+          }
+        }
+        if (this.selectedEfBuild !== null) {
+          const value = record.normalized_params ? record.normalized_params.ef_build : null;
+          if (value !== this.selectedEfBuild) {
+            return false;
+          }
+        }
+        if (this.selectedEfSearch !== null) {
+          const value = record.normalized_params ? record.normalized_params.ef_search : null;
+          if (value !== this.selectedEfSearch) {
+            return false;
+          }
         }
         const key = `${record.dataset}|${record.engine}|${record.experiment}`;
         const precision = precisionLookup.get(key);
@@ -247,7 +555,49 @@ export default {
         if (selectedEngines.size === 0) {
           return false;
         }
-        return selectedEngines.has(record.engine);
+        if (!selectedEngines.has(record.engine)) {
+          return false;
+        }
+        if (!this.isIndexTime && this.selectedParallel !== null && record.parallel !== this.selectedParallel) {
+          return false;
+        }
+        if (this.selectedStorageEngine !== null) {
+          const storageEngine = record.collection_params ? record.collection_params.engine : null;
+          if (storageEngine !== this.selectedStorageEngine) {
+            return false;
+          }
+        }
+        if (this.selectedOptimizeCutoff !== null) {
+          const cutoff = record.collection_params ? record.collection_params.optimize_cutoff : null;
+          if (cutoff !== this.selectedOptimizeCutoff) {
+            return false;
+          }
+        }
+        if (this.selectedAutoOptimize !== null) {
+          const autoOptimize = record.collection_params ? record.collection_params.auto_optimize : null;
+          if (autoOptimize !== this.selectedAutoOptimize) {
+            return false;
+          }
+        }
+        if (this.selectedM !== null) {
+          const value = record.normalized_params ? record.normalized_params.m : null;
+          if (value !== this.selectedM) {
+            return false;
+          }
+        }
+        if (this.selectedEfBuild !== null) {
+          const value = record.normalized_params ? record.normalized_params.ef_build : null;
+          if (value !== this.selectedEfBuild) {
+            return false;
+          }
+        }
+        if (this.selectedEfSearch !== null) {
+          const value = record.normalized_params ? record.normalized_params.ef_search : null;
+          if (value !== this.selectedEfSearch) {
+            return false;
+          }
+        }
+        return true;
       });
     },
     uploadLookup() {
@@ -257,7 +607,7 @@ export default {
       const lookup = new Map();
       this.vectorData.upload_records
           .forEach(record => {
-            const key = `${record.dataset}|${record.engine}|${record.experiment}`;
+            const key = `${record.dataset}|${record.engine}|${record.experiment}|${record.parallel}`;
             const existing = lookup.get(key);
             if (!existing || (record.last_timestamp && record.last_timestamp > existing.last_timestamp)) {
               lookup.set(key, record);
@@ -309,10 +659,42 @@ export default {
         this.uploadSortDirection = 'asc';
       }
     },
+    selectedParallel() {
+      this.renderCharts();
+      this.emitStateChange();
+    },
+    selectedStorageEngine() {
+      this.renderCharts();
+      this.emitStateChange();
+    },
+    selectedOptimizeCutoff() {
+      this.renderCharts();
+      this.emitStateChange();
+    },
+    selectedAutoOptimize() {
+      this.renderCharts();
+      this.emitStateChange();
+    },
+    selectedM() {
+      this.renderCharts();
+      this.emitStateChange();
+    },
+    selectedEfBuild() {
+      this.renderCharts();
+      this.emitStateChange();
+    },
+    selectedEfSearch() {
+      this.renderCharts();
+      this.emitStateChange();
+    },
     selectedEngines() {
+      this.ensureParallelSelection();
+      this.ensureParamSelection();
       this.renderCharts();
     },
     selectedDataset() {
+      this.ensureParallelSelection();
+      this.ensureParamSelection();
       this.renderCharts();
     },
     initialPrecision(value) {
@@ -324,6 +706,69 @@ export default {
       if (value) {
         this.plotMetric = value;
       }
+    },
+    initialParallel(value) {
+      if (value !== undefined && value !== null && value !== this.selectedParallel) {
+        this.selectedParallel = value;
+        this.ensureParallelSelection();
+      }
+    },
+    initialStorageEngine(value) {
+      if (value && value !== this.selectedStorageEngine) {
+        this.selectedStorageEngine = value;
+        this.ensureParamSelection();
+      }
+    },
+    initialOptimizeCutoff(value) {
+      if (value !== undefined && value !== null && value !== this.selectedOptimizeCutoff) {
+        this.selectedOptimizeCutoff = value;
+        this.ensureParamSelection();
+      }
+    },
+    initialAutoOptimize(value) {
+      if (value !== undefined && value !== null && value !== this.selectedAutoOptimize) {
+        this.selectedAutoOptimize = value;
+        this.ensureParamSelection();
+      }
+    },
+    initialM(value) {
+      if (value !== undefined && value !== null && value !== this.selectedM) {
+        this.selectedM = value;
+        this.ensureParamSelection();
+      }
+    },
+    initialEfBuild(value) {
+      if (value !== undefined && value !== null && value !== this.selectedEfBuild) {
+        this.selectedEfBuild = value;
+        this.ensureParamSelection();
+      }
+    },
+    initialEfSearch(value) {
+      if (value !== undefined && value !== null && value !== this.selectedEfSearch) {
+        this.selectedEfSearch = value;
+        this.ensureParamSelection();
+      }
+    },
+    availableParallels() {
+      this.ensureParallelSelection();
+    },
+    availableStorageEngines() {
+      this.ensureParamSelection();
+    },
+    availableOptimizeCutoffs() {
+      this.ensureParamSelection();
+    },
+    availableAutoOptimize() {
+      this.ensureParamSelection();
+    },
+    availableMValues() {
+      this.ensureParamSelection();
+    },
+    availableEfBuildValues() {
+      this.ensureParamSelection();
+    },
+    availableEfSearchValues() {
+      this.ensureParamSelection();
     }
   },
   mounted() {
@@ -334,10 +779,13 @@ export default {
           if (this.vectorData && this.vectorData.datasets && this.vectorData.engines) {
             this.$emit('meta-ready', {
               datasets: this.vectorData.datasets,
-              engines: this.vectorData.engines
+              engines: this.vectorData.engines,
+              dataset_engines: this.vectorData.dataset_engines
             });
           }
           this.$nextTick(() => {
+            this.ensureParallelSelection();
+            this.ensureParamSelection();
             this.initCharts();
             this.renderCharts();
           });
@@ -357,6 +805,40 @@ export default {
     }
   },
   methods: {
+    ensureParallelSelection() {
+      if (!this.availableParallels.length) {
+        this.selectedParallel = null;
+        return;
+      }
+      if (this.selectedParallel === null || !this.availableParallels.includes(this.selectedParallel)) {
+        this.selectedParallel = this.availableParallels[0];
+      }
+    },
+    ensureParamSelection() {
+      if (this.selectedStorageEngine !== null && !this.availableStorageEngines.includes(this.selectedStorageEngine)) {
+        this.selectedStorageEngine = null;
+      }
+
+      if (this.selectedOptimizeCutoff !== null && !this.availableOptimizeCutoffs.includes(this.selectedOptimizeCutoff)) {
+        this.selectedOptimizeCutoff = null;
+      }
+
+      if (this.selectedAutoOptimize !== null && !this.availableAutoOptimize.includes(this.selectedAutoOptimize)) {
+        this.selectedAutoOptimize = null;
+      }
+
+      if (this.selectedM !== null && !this.availableMValues.includes(this.selectedM)) {
+        this.selectedM = null;
+      }
+
+      if (this.selectedEfBuild !== null && !this.availableEfBuildValues.includes(this.selectedEfBuild)) {
+        this.selectedEfBuild = null;
+      }
+
+      if (this.selectedEfSearch !== null && !this.availableEfSearchValues.includes(this.selectedEfSearch)) {
+        this.selectedEfSearch = null;
+      }
+    },
     initCharts() {
       if (this.$refs.scatterChart && !this.scatterChart) {
         this.scatterChart = echarts.init(this.$refs.scatterChart);
@@ -374,7 +856,7 @@ export default {
       const metricValues = [];
       if (this.plotMetric === 'index_time') {
         for (const record of records) {
-          const seriesKey = `${record.engine} (${record.experiment})`;
+          const seriesKey = record.engine;
           const currentMax = maxPrecisionBySeries.get(seriesKey);
           if (currentMax === undefined || record.mean_precision > currentMax) {
             maxPrecisionBySeries.set(seriesKey, record.mean_precision);
@@ -382,7 +864,7 @@ export default {
         }
       }
       for (const record of records) {
-        const seriesKey = `${record.engine} (${record.experiment})`;
+        const seriesKey = record.engine;
         if (this.plotMetric === 'index_time' && maxPrecisionBySeries.get(seriesKey) !== record.mean_precision) {
           continue;
         }
@@ -567,7 +1049,10 @@ export default {
         case 'p99':
           return record.p99_ms;
         case 'index_time': {
-          const key = `${record.dataset}|${record.engine}|${record.experiment}`;
+          if (this.selectedParallel === null) {
+            return null;
+          }
+          const key = `${record.dataset}|${record.engine}|${record.experiment}|${this.selectedParallel}`;
           const upload = this.uploadLookup.get(key);
           return upload ? upload.upload_ms : null;
         }
@@ -603,8 +1088,16 @@ export default {
       return value;
     },
     getUploadTime(record) {
+      if (this.isIndexTime) {
+        if (this.selectedParallel === null) {
+          return null;
+        }
+        const key = `${record.dataset}|${record.engine}|${record.experiment}|${this.selectedParallel}`;
+        const upload = this.uploadLookup.get(key);
+        return upload ? upload.upload_ms : null;
+      }
       const key = `${record.dataset}|${record.engine}|${record.experiment}`;
-      const upload = this.uploadLookup.get(key);
+      const upload = this.uploadLatestLookup.get(key);
       return upload ? upload.upload_ms : null;
     },
     escapeHtml(value) {
@@ -648,7 +1141,14 @@ export default {
     emitStateChange() {
       this.$emit('state-change', {
         precision: this.precisionThreshold,
-        plotMetric: this.plotMetric
+        plotMetric: this.plotMetric,
+        parallel: this.selectedParallel,
+        storageEngine: this.selectedStorageEngine,
+        optimizeCutoff: this.selectedOptimizeCutoff,
+        autoOptimize: this.selectedAutoOptimize,
+        m: this.selectedM,
+        efBuild: this.selectedEfBuild,
+        efSearch: this.selectedEfSearch
       });
     }
   }

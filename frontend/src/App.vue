@@ -145,6 +145,13 @@
                        v-bind:selected-engines="selectedVectorEngines"
                        v-bind:initial-precision="vectorPrecision"
                        v-bind:initial-plot-metric="vectorPlotMetric"
+                       v-bind:initial-parallel="vectorParallel"
+                       v-bind:initial-storage-engine="vectorStorageEngine"
+                       v-bind:initial-optimize-cutoff="vectorOptimizeCutoff"
+                       v-bind:initial-auto-optimize="vectorAutoOptimize"
+                       v-bind:initial-m="vectorM"
+                       v-bind:initial-ef-build="vectorEfBuild"
+                       v-bind:initial-ef-search="vectorEfSearch"
                        v-on:meta-ready="handleVectorMeta"
                        v-on:state-change="handleVectorStateChange"/>
       <footer class="my-5 pt-5 text-muted text-center text-small">
@@ -180,11 +187,19 @@ export default {
       benchmarks: [{"fulltext": 1}, {"vector": 0}],
       vectorPrecision: 0.9,
       vectorPlotMetric: 'rps',
+      vectorParallel: null,
+      vectorStorageEngine: null,
+      vectorOptimizeCutoff: null,
+      vectorAutoOptimize: null,
+      vectorM: null,
+      vectorEfBuild: null,
+      vectorEfSearch: null,
       engines: [],
       engineGroups: {},
       vectorDatasets: [],
       vectorEngines: [],
       vectorEngineGroups: {},
+      vectorDatasetEngines: null,
       results: {},
       initData: {},
       errorMessage: "",
@@ -262,6 +277,8 @@ export default {
       }
     },
     onVectorDatasetChanged() {
+      this.applyVectorEnginesForDataset();
+      this.updateVectorEngineGroups();
       this.updateVectorUrl();
     },
     onVectorEnginesChanged() {
@@ -275,11 +292,15 @@ export default {
       if (meta.datasets) {
         this.vectorDatasets = this.buildSelectionItems(meta.datasets, this.vectorDatasets);
       }
+      if (meta.dataset_engines) {
+        this.vectorDatasetEngines = meta.dataset_engines;
+      }
       if (meta.engines) {
         this.vectorEngines = this.buildSelectionItems(meta.engines, this.vectorEngines);
-        this.updateVectorEngineGroups();
       }
       this.applyVectorStateFromUrl();
+      this.applyVectorEnginesForDataset();
+      this.updateVectorEngineGroups();
     },
     handleVectorStateChange(state) {
       if (!state) {
@@ -291,7 +312,38 @@ export default {
       if (state.plotMetric) {
         this.vectorPlotMetric = state.plotMetric;
       }
+      if (state.parallel !== undefined) {
+        this.vectorParallel = state.parallel;
+      }
+      if (state.storageEngine !== undefined) {
+        this.vectorStorageEngine = state.storageEngine;
+      }
+      if (state.optimizeCutoff !== undefined) {
+        this.vectorOptimizeCutoff = state.optimizeCutoff;
+      }
+      if (state.autoOptimize !== undefined) {
+        this.vectorAutoOptimize = state.autoOptimize;
+      }
+      if (state.m !== undefined) {
+        this.vectorM = state.m;
+      }
+      if (state.efBuild !== undefined) {
+        this.vectorEfBuild = state.efBuild;
+      }
+      if (state.efSearch !== undefined) {
+        this.vectorEfSearch = state.efSearch;
+      }
       this.updateVectorUrl();
+    },
+    applyVectorEnginesForDataset() {
+      if (!this.vectorDatasetEngines || !this.selectedVectorDataset) {
+        return;
+      }
+      const datasetEngines = this.vectorDatasetEngines[this.selectedVectorDataset];
+      if (!Array.isArray(datasetEngines)) {
+        return;
+      }
+      this.vectorEngines = this.buildSelectionItems(datasetEngines, this.vectorEngines);
     },
     buildSelectionItems(items, previousItems) {
       if (!Array.isArray(items)) {
@@ -354,6 +406,52 @@ export default {
       if (plot) {
         state.plotMetric = plot;
       }
+      const parallel = params.get('v_parallel');
+      if (parallel) {
+        const parsed = parseInt(parallel, 10);
+        if (!Number.isNaN(parsed)) {
+          state.parallel = parsed;
+        }
+      }
+      const storageEngine = params.get('v_storage');
+      if (storageEngine) {
+        state.storageEngine = storageEngine;
+      }
+      const optimizeCutoff = params.get('v_optimize_cutoff');
+      if (optimizeCutoff) {
+        const parsed = parseInt(optimizeCutoff, 10);
+        if (!Number.isNaN(parsed)) {
+          state.optimizeCutoff = parsed;
+        }
+      }
+      const autoOptimize = params.get('v_auto_optimize');
+      if (autoOptimize) {
+        const parsed = parseInt(autoOptimize, 10);
+        if (!Number.isNaN(parsed)) {
+          state.autoOptimize = parsed;
+        }
+      }
+      const m = params.get('v_m');
+      if (m) {
+        const parsed = parseInt(m, 10);
+        if (!Number.isNaN(parsed)) {
+          state.m = parsed;
+        }
+      }
+      const efBuild = params.get('v_ef_build');
+      if (efBuild) {
+        const parsed = parseInt(efBuild, 10);
+        if (!Number.isNaN(parsed)) {
+          state.efBuild = parsed;
+        }
+      }
+      const efSearch = params.get('v_ef_search');
+      if (efSearch) {
+        const parsed = parseInt(efSearch, 10);
+        if (!Number.isNaN(parsed)) {
+          state.efSearch = parsed;
+        }
+      }
       return state;
     },
     applyBenchmarkFromUrl() {
@@ -383,6 +481,27 @@ export default {
       if (this.vectorUrlState.plotMetric) {
         this.vectorPlotMetric = this.vectorUrlState.plotMetric;
       }
+      if (this.vectorUrlState.parallel !== undefined) {
+        this.vectorParallel = this.vectorUrlState.parallel;
+      }
+      if (this.vectorUrlState.storageEngine !== undefined) {
+        this.vectorStorageEngine = this.vectorUrlState.storageEngine;
+      }
+      if (this.vectorUrlState.optimizeCutoff !== undefined) {
+        this.vectorOptimizeCutoff = this.vectorUrlState.optimizeCutoff;
+      }
+      if (this.vectorUrlState.autoOptimize !== undefined) {
+        this.vectorAutoOptimize = this.vectorUrlState.autoOptimize;
+      }
+      if (this.vectorUrlState.m !== undefined) {
+        this.vectorM = this.vectorUrlState.m;
+      }
+      if (this.vectorUrlState.efBuild !== undefined) {
+        this.vectorEfBuild = this.vectorUrlState.efBuild;
+      }
+      if (this.vectorUrlState.efSearch !== undefined) {
+        this.vectorEfSearch = this.vectorUrlState.efSearch;
+      }
     },
     updateVectorUrl() {
       if (!this.isFulltextView) {
@@ -398,6 +517,27 @@ export default {
         params.set('v_precision', this.vectorPrecision.toFixed(2));
         if (this.vectorPlotMetric) {
           params.set('v_plot', this.vectorPlotMetric);
+        }
+        if (this.vectorParallel !== undefined && this.vectorParallel !== null) {
+          params.set('v_parallel', String(this.vectorParallel));
+        }
+        if (this.vectorStorageEngine) {
+          params.set('v_storage', this.vectorStorageEngine);
+        }
+        if (this.vectorOptimizeCutoff !== undefined && this.vectorOptimizeCutoff !== null) {
+          params.set('v_optimize_cutoff', String(this.vectorOptimizeCutoff));
+        }
+        if (this.vectorAutoOptimize !== undefined && this.vectorAutoOptimize !== null) {
+          params.set('v_auto_optimize', String(this.vectorAutoOptimize));
+        }
+        if (this.vectorM !== undefined && this.vectorM !== null) {
+          params.set('v_m', String(this.vectorM));
+        }
+        if (this.vectorEfBuild !== undefined && this.vectorEfBuild !== null) {
+          params.set('v_ef_build', String(this.vectorEfBuild));
+        }
+        if (this.vectorEfSearch !== undefined && this.vectorEfSearch !== null) {
+          params.set('v_ef_search', String(this.vectorEfSearch));
         }
         window.history.pushState("", "", "/?" + params.toString());
       }
