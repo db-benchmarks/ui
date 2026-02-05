@@ -135,6 +135,17 @@ function getNormalizedVectorParams(params) {
   const config = getConfig(params) || {};
   const searchParams = getSearchParams(params) || {};
 
+  // Avoid newer JS syntax (e.g. `??`) so this script can run on older Node versions.
+  const coalesce = function () {
+    for (let i = 0; i < arguments.length; i += 1) {
+      const value = arguments[i];
+      if (value !== null && value !== undefined) {
+        return value;
+      }
+    }
+    return null;
+  };
+
   const toNumberIfNumeric = (value) => {
     if (value === null || value === undefined) {
       return null;
@@ -151,30 +162,32 @@ function getNormalizedVectorParams(params) {
     return value;
   };
 
-  const m = (
-    (collectionParams.index_options && collectionParams.index_options.m) ??
-    (collectionParams.method && collectionParams.method.parameters && collectionParams.method.parameters.m) ??
-    (collectionParams.hnsw_config && collectionParams.hnsw_config.m) ??
-    (collectionParams.vectorIndexConfig && collectionParams.vectorIndexConfig.maxConnections) ??
+  const m = coalesce(
+    collectionParams.index_options && collectionParams.index_options.m,
+    collectionParams.method && collectionParams.method.parameters && collectionParams.method.parameters.m,
+    collectionParams.hnsw_config && collectionParams.hnsw_config.m,
+    collectionParams.vectorIndexConfig && collectionParams.vectorIndexConfig.maxConnections,
     null
   );
 
-  const efBuild = (
-    (collectionParams.index_options && collectionParams.index_options.ef_construction) ??
-    (collectionParams.method && collectionParams.method.parameters && collectionParams.method.parameters.ef_construction) ??
-    (collectionParams.hnsw_config && collectionParams.hnsw_config.ef_construct) ??
-    (collectionParams.vectorIndexConfig && collectionParams.vectorIndexConfig.efConstruction) ??
+  const efBuild = coalesce(
+    collectionParams.index_options && collectionParams.index_options.ef_construction,
+    collectionParams.method &&
+      collectionParams.method.parameters &&
+      collectionParams.method.parameters.ef_construction,
+    collectionParams.hnsw_config && collectionParams.hnsw_config.ef_construct,
+    collectionParams.vectorIndexConfig && collectionParams.vectorIndexConfig.efConstruction,
     null
   );
 
-  const efSearch = (
-    config['knn.algo_param.ef_search'] ??
-    config.num_candidates ??
-    config.ef ??
-    config.hnsw_ef ??
-    config.EF ??
-    searchParams.hnsw_ef ??
-    searchParams.num_candidates ??
+  const efSearch = coalesce(
+    config['knn.algo_param.ef_search'],
+    config.num_candidates,
+    config.ef,
+    config.hnsw_ef,
+    config.EF,
+    searchParams.hnsw_ef,
+    searchParams.num_candidates,
     null
   );
 
