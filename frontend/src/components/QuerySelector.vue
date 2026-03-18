@@ -10,16 +10,19 @@
     <input
         :checked="checked"
         @select="updateIsChecked"
-        type="checkbox"> {{ this.query }}
+        type="checkbox">
+    <QueryText :query="query" />
   </span>
 </template>
 
 <script>
+import QueryText from "@/components/QueryText";
+
 export default {
   name: "QuerySelector",
+  components: {QueryText},
   props: {
     query: {
-      type: String,
       required: true
     },
     checked: {
@@ -37,5 +40,9 @@ export default {
 <style scoped>
 .query-name {
   cursor: pointer;
+}
+
+.query-name input {
+  margin-right: 0.35rem;
 }
 </style>

@@ -14,6 +14,7 @@ header( 'Content-Type: application/json' );
 class DataGetter {
 	const STATUS_SUCCESS = "success";
 	const STATUS_ERROR = "error";
+	const VECTOR_QUERY_DISPLAY_THRESHOLD = 1024;
 
 	private $startTime;
 
@@ -211,10 +212,13 @@ class DataGetter {
 	}
 
 	private function parseSingleInfo( array $row ) {
+		$queryDisplay = $this->formatQueryForDisplay( $row['original_query'] );
+		$adaptedQueryDisplay = $this->formatQueryForDisplay( $row['modified_query'] );
+
 		return [
 			'Query'       => [
-				'Original query' => $row['original_query'],
-				'Adapted query'  => ' ' . $row['modified_query'],
+				'Original query' => $queryDisplay['text'],
+				'Adapted query'  => ' ' . $adaptedQueryDisplay['text'],
 			],
 			'Performance' => [
 				'Cold run time'               => number_format( $row['cold'] ) . " μs",
@@ -236,6 +240,38 @@ class DataGetter {
 			],
 			'engine'      => $row['engine_name'] . '_' . $row['type'],
 			'retest'      => intval( $row['retest'] ),
+			'queryDisplay' => $queryDisplay,
+		];
+	}
+
+	private function formatQueryForDisplay( string $query ): array {
+		if ( strlen( $query ) < self::VECTOR_QUERY_DISPLAY_THRESHOLD ) {
+			return [
+				'text' => $query,
+				'placeholders' => [],
+			];
+		}
+
+		$placeholders = [];
+		$placeholderId = 0;
+		$text = preg_replace_callback(
+			'/\(\s*-?\d+(?:\.\d+)?(?:\s*,\s*-?\d+(?:\.\d+)?){15,}\s*\)/',
+			static function ( array $matches ) use ( &$placeholders, &$placeholderId ) {
+				$placeholderId++;
+				$token = '[vector omitted #' . $placeholderId . ']';
+				$placeholders[] = [
+					'token' => $token,
+					'value' => $matches[0],
+				];
+
+				return $token;
+			},
+			$query
+		);
+
+		return [
+			'text' => $text,
+			'placeholders' => $placeholders,
 		];
 	}
 
@@ -433,7 +469,7 @@ class DataGetter {
 					}
 				}
 
-				$data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ]['query'] = $row['original_query'];
+				$data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ]['query'] = $this->formatQueryForDisplay( $row['original_query'] );
 
 				if ( $row['retest'] ) {
 					$data[ $row['test_name'] ][ $row['memory'] ][ md5( $row['original_query'] ) ][ $engine . "_retest" ] = [

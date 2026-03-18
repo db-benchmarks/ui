@@ -702,7 +702,11 @@ export default {
       return id % this.groupedCount;
     },
     hasFailsInRow(rowId) {
-      for (let row of this.results[rowId]){
+      for (let [columnId, row] of this.results[rowId].entries()){
+        if (columnId === 0) {
+          continue;
+        }
+
         if (row instanceof Object){
           return true;
         }

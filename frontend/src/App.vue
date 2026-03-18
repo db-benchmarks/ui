@@ -206,6 +206,10 @@ export default {
     queryInfo: function () {
       this.parsedQueryInfo = {};
       for (let tab in this.queryInfo) {
+        if (tab === 'queryDisplay') {
+          continue;
+        }
+
         if (this.queryInfo[tab] instanceof Object) {
           let text = '<ul>';
 
@@ -806,6 +810,16 @@ h4, .h4 {
   color: white;
   border-radius: 16px;
   padding: 5px 10px 4px;
+}
+
+.tooltip.query-tooltip .tooltip-inner {
+  max-width: 560px;
+  max-height: 280px;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  overflow-y: auto;
 }
 
 .tooltip .tooltip-arrow {

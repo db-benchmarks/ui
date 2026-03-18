@@ -8,11 +8,30 @@ export default {
   },
   computed: {
     // Execution Time
-    minExecutionTime() {
-      return Math.min(...this.content.map(row => row.init_time));
+    minLoadTime() {
+      return Math.min(...this.content.map(row => this.getLoadTime(row)));
     },
-    maxExecutionTime() {
-      return Math.max(...this.content.map(row => row.init_time));
+    maxLoadTime() {
+      return Math.max(...this.content.map(row => this.getLoadTime(row)));
+    },
+    measuredPostprocessTimes() {
+      return this.content
+          .map(row => this.getPostprocessTime(row))
+          .filter(time => time !== null);
+    },
+    minPostprocessTime() {
+      if (this.measuredPostprocessTimes.length === 0) {
+        return null;
+      }
+
+      return Math.min(...this.measuredPostprocessTimes);
+    },
+    maxPostprocessTime() {
+      if (this.measuredPostprocessTimes.length === 0) {
+        return null;
+      }
+
+      return Math.max(...this.measuredPostprocessTimes);
     },
     // CPU
     minCPU95p() {
@@ -67,6 +86,27 @@ export default {
     }
   },
   methods: {
+    getInitTime(row) {
+      return parseInt(row.init_time, 10);
+    },
+    getPostprocessTime(row) {
+      if (row.postprocess_time === undefined) {
+        return null;
+      }
+
+      const postprocessTime = parseInt(row.postprocess_time, 10);
+      return postprocessTime === -1 ? null : postprocessTime;
+    },
+    getLoadTime(row) {
+      const initTime = this.getInitTime(row);
+      const postprocessTime = this.getPostprocessTime(row);
+
+      if (postprocessTime === null) {
+        return initTime;
+      }
+
+      return initTime - postprocessTime;
+    },
     formatHumanReadableTime: function (seconds) {
       const hours = Math.floor(seconds / 3600);
       const minutes = Math.floor((seconds % 3600) / 60);
@@ -102,7 +142,8 @@ export default {
   <table class="table init-table">
     <tr>
       <th>Engine</th>
-      <th v-tooltip="'Lower is better'">Execution time</th>
+      <th v-tooltip="'Lower is better'">Load time</th>
+      <th v-tooltip="'Lower is better'">Postprocess time</th>
       <th v-tooltip="'Lower is better'">CPU LOAD (cores)</th>
       <th v-tooltip="'Lower is better'">RAM</th>
       <th v-tooltip="'Lower is better'">IO (total)</th>
@@ -116,10 +157,23 @@ export default {
 
         <td>
           <span :class="{
-            'text-green': row.init_time === minExecutionTime,
-            'text-red': row.init_time === maxExecutionTime
+            'text-green': getLoadTime(row) === minLoadTime,
+            'text-red': getLoadTime(row) === maxLoadTime
           }">
-            {{ formatHumanReadableTime(parseInt(row.init_time)) }}
+            {{ formatHumanReadableTime(getLoadTime(row)) }}
+          </span>
+        </td>
+
+        <td>
+          <span v-if="getPostprocessTime(row) === null">-</span>
+          <span
+            v-else
+            :class="{
+              'text-green': getPostprocessTime(row) === minPostprocessTime,
+              'text-red': getPostprocessTime(row) === maxPostprocessTime
+            }"
+          >
+            {{ formatHumanReadableTime(getPostprocessTime(row)) }}
           </span>
         </td>
 

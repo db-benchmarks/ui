@@ -3,7 +3,7 @@
     <template v-slot:header>
       <div>
         <h4>Query execution info for:</h4>
-        <p>Query: <span class="p-content">{{ getQuery() }}</span></p>
+        <p>Query: <span class="p-content"><QueryText :query="getQuery()" /></span></p>
         <p>Database: <span class="p-content">{{ engineInQueryInfo }}</span></p>
       </div>
     </template>
@@ -16,10 +16,11 @@
 <script>
 import ModalLargeScroll from "@/components/ModalLargeScroll";
 import Tabs from "@/components/Tabs";
+import QueryText from "@/components/QueryText";
 
 export default {
   name: "QueryInfo",
-  components: {ModalLargeScroll, Tabs},
+  components: {ModalLargeScroll, Tabs, QueryText},
   props: {
     tabsContent: {
       required: true
@@ -33,6 +34,10 @@ export default {
   },
   methods: {
     getQuery() {
+      if (this.queryInfo.queryDisplay !== undefined) {
+        return this.queryInfo.queryDisplay
+      }
+
       if (this.queryInfo.Query !== undefined) {
         return this.queryInfo['Query']['Original query']
       }
