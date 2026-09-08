@@ -379,7 +379,7 @@ export default {
       let engines = [];
       let retestEngines = [];
 
-      let unfilteredEngines = this.initData[selectedTest][selectedMemory];
+      let unfilteredEngines = this.sortEngineNames(this.initData[selectedTest][selectedMemory]);
 
       for (let engineName of unfilteredEngines.filter(name => name.indexOf('_retest') >= 0)) {
         let obj = {};
@@ -407,6 +407,15 @@ export default {
 
     getCacheSelection() {
       this.getSelectionFromUrl("cache");
+    },
+    sortEngineNames(engineNames) {
+      return [...engineNames].sort(this.compareEngineNames);
+    },
+    compareEngineNames(a, b) {
+      return a.localeCompare(b, undefined, {
+        numeric: true,
+        sensitivity: 'base'
+      });
     },
 
     fillEngineGroups() {
@@ -489,16 +498,10 @@ export default {
       }
 
 
-      this.engines = this.engines.sort(function (a, b) {
-        if (Object.keys(a)[0] < Object.keys(b)[0]) {
-          return -1;
-        }
-        if (Object.keys(a)[0] > Object.keys(b)[0]) {
-          return 1;
-        }
-
-        return 0;
-      });
+      this.engines = this.engines.sort((a, b) => this.compareEngineNames(
+        Object.keys(a)[0],
+        Object.keys(b)[0]
+      ));
 
       this.applySelection(false)
     },
