@@ -26,7 +26,7 @@ services:
 
   php:
     container_name: benchmarks_php
-    image: php:8-fpm
+    image: php:8.5.12-fpm
     restart: always
     volumes:
       - ./backend:/backend/:ro
