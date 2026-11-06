@@ -8,6 +8,7 @@ services:
     extends:
       file: docker-compose.yml
       service: php
+    image: db-benchmarks-php-dev:8.4.27
     build:
       context: ./backend/
     pull_policy: build
